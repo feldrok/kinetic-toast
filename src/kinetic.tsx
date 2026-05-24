@@ -33,9 +33,35 @@ import {
 	LoaderCircle,
 	X,
 } from "./icons";
-import type { KineticButton, KineticState, KineticStyles } from "./types";
+import type {
+	KineticButton,
+	KineticEffects,
+	KineticPerformanceMode,
+	KineticState,
+	KineticStyles,
+} from "./types";
 
 type State = KineticState;
+
+interface VisualEffects {
+	gooey: boolean;
+	blur: boolean;
+}
+
+const resolveVisualEffects = (
+	performanceMode?: KineticPerformanceMode,
+	effects?: KineticEffects,
+): VisualEffects => {
+	const defaults =
+		performanceMode === "minimal"
+			? { gooey: false, blur: false }
+			: { gooey: true, blur: true };
+
+	return {
+		gooey: effects?.gooey ?? defaults.gooey,
+		blur: effects?.blur ?? defaults.blur,
+	};
+};
 
 interface View {
 	title?: string;
@@ -60,6 +86,8 @@ interface KineticProps {
 	styles?: KineticStyles;
 	button?: KineticButton;
 	roundness?: number;
+	performanceMode?: KineticPerformanceMode;
+	effects?: KineticEffects;
 	exiting?: boolean;
 	autoExpandDelayMs?: number;
 	autoCollapseDelayMs?: number;
@@ -132,6 +160,8 @@ export const Kinetic = memo(function Kinetic({
 	styles,
 	button,
 	roundness,
+	performanceMode,
+	effects,
 	exiting = false,
 	autoExpandDelayMs,
 	autoCollapseDelayMs,
@@ -167,7 +197,9 @@ export const Kinetic = memo(function Kinetic({
 	const headerKey = `${view.state}-${view.title}`;
 	const filterId = `kinetic-gooey-${id}`;
 	const resolvedRoundness = Math.max(0, roundness ?? DEFAULT_ROUNDNESS);
-	const blur = resolvedRoundness * BLUR_RATIO;
+	const visualEffects = resolveVisualEffects(performanceMode, effects);
+	const gooeyBlur = visualEffects.gooey ? resolvedRoundness * BLUR_RATIO : 0;
+	const headerBlur = visualEffects.blur ? "6px" : "0px";
 
 	const headerRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
@@ -410,7 +442,7 @@ export const Kinetic = memo(function Kinetic({
 	const expandedContent = Math.max(0, expanded - HEIGHT);
 	const navExtra = showNav ? 50 : 0;
 	const resolvedPillWidth = Math.max(pillWidth || HEIGHT, HEIGHT) + navExtra;
-	const pillHeight = HEIGHT + blur * 3;
+	const pillHeight = HEIGHT + gooeyBlur * 3;
 
 	const pillX =
 		position === "right"
@@ -450,9 +482,10 @@ export const Kinetic = memo(function Kinetic({
 
 	const viewBox = `0 0 ${WIDTH} ${svgHeight}`;
 
-	const canvasStyle = useMemo<CSSProperties>(
-		() => ({ filter: `url(#${filterId})` }),
-		[filterId],
+	const canvasStyle = useMemo<CSSProperties | undefined>(
+		() =>
+			visualEffects.gooey ? { filter: `url(#${filterId})` } : undefined,
+		[filterId, visualEffects.gooey],
 	);
 
 	/* ------------------------------- Inline styles ---------------------------- */
@@ -464,8 +497,9 @@ export const Kinetic = memo(function Kinetic({
 			"--_px": `${pillX}px`,
 			"--_ht": `translateY(${open ? (expand === "bottom" ? 3 : -3) : 0}px) scale(${open ? 0.9 : 1})`,
 			"--_co": `${open ? 1 : 0}`,
+			"--_hb": headerBlur,
 		}),
-		[open, expanded, resolvedPillWidth, pillX, expand],
+		[open, expanded, resolvedPillWidth, pillX, expand, headerBlur],
 	);
 
 	/* -------------------------------- Handlers -------------------------------- */
@@ -599,6 +633,8 @@ export const Kinetic = memo(function Kinetic({
 			data-edge={expand}
 			data-position={position}
 			data-state={view.state}
+			data-gooey={visualEffects.gooey}
+			data-blur={visualEffects.blur}
 			className={className}
 			style={rootStyle}
 			onMouseEnter={handleEnter}
@@ -609,7 +645,9 @@ export const Kinetic = memo(function Kinetic({
 			<div data-kinetic-canvas data-edge={expand} style={canvasStyle}>
 				<svg data-kinetic-svg width={WIDTH} height={svgHeight} viewBox={viewBox}>
 					<title>Kinetic Notification</title>
-					<GooeyDefs filterId={filterId} blur={blur} />
+					{visualEffects.gooey && (
+						<GooeyDefs filterId={filterId} blur={gooeyBlur} />
+					)}
 					<motion.rect
 						data-kinetic-pill
 						rx={resolvedRoundness}

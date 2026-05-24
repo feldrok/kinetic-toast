@@ -5,6 +5,8 @@ export { KINETIC_POSITIONS } from "./core-types";
 export type {
 	CoreKineticOptions,
 	KineticAutopilotOptions,
+	KineticEffects,
+	KineticPerformanceMode,
 	KineticPosition,
 	KineticState,
 } from "./core-types";
