@@ -53,6 +53,12 @@ export interface KineticToasterProps {
 	theme?: "light" | "dark" | "system";
 	closeButton?: boolean;
 	navigation?: boolean;
+	/**
+	 * Inline style applied to every viewport. The shadcn wrapper uses this to
+	 * map host theme tokens (e.g. `--popover`) to the kinetic CSS variables
+	 * (`--kinetic-fill`, `--kinetic-fg-muted`) so toasts inherit the app theme.
+	 */
+	style?: CSSProperties;
 }
 
 interface KineticViewportModel {
@@ -291,11 +297,6 @@ export const kinetic = {
 
 /* ------------------------------ Toaster Component ------------------------- */
 
-const THEME_FILLS = {
-	light: "#1a1a1a",
-	dark: "#f2f2f2",
-} as const;
-
 function useResolvedTheme(
 	theme: "light" | "dark" | "system" | undefined,
 ): "light" | "dark" {
@@ -316,6 +317,7 @@ export function Toaster({
 	theme,
 	closeButton = false,
 	navigation = false,
+	style,
 }: KineticToasterProps) {
 	const resolvedTheme = useResolvedTheme(theme);
 	const toasts = useSyncExternalStore(
@@ -476,25 +478,26 @@ export function Toaster({
 
 	const getViewportStyle = useCallback(
 		(pos: KineticPosition): CSSProperties | undefined => {
-			if (offset === undefined) return undefined;
+			const s: CSSProperties = style ? { ...style } : {};
 
-			const o =
-				typeof offset === "object"
-					? offset
-					: { top: offset, right: offset, bottom: offset, left: offset };
+			if (offset !== undefined) {
+				const o =
+					typeof offset === "object"
+						? offset
+						: { top: offset, right: offset, bottom: offset, left: offset };
 
-			const s: CSSProperties = {};
-			const px = (v: KineticOffsetValue) =>
-				typeof v === "number" ? `${v}px` : v;
+				const px = (v: KineticOffsetValue) =>
+					typeof v === "number" ? `${v}px` : v;
 
-			if (pos.startsWith("top") && o.top) s.top = px(o.top);
-			if (pos.startsWith("bottom") && o.bottom) s.bottom = px(o.bottom);
-			if (pos.endsWith("left") && o.left) s.left = px(o.left);
-			if (pos.endsWith("right") && o.right) s.right = px(o.right);
+				if (pos.startsWith("top") && o.top) s.top = px(o.top);
+				if (pos.startsWith("bottom") && o.bottom) s.bottom = px(o.bottom);
+				if (pos.endsWith("left") && o.left) s.left = px(o.left);
+				if (pos.endsWith("right") && o.right) s.right = px(o.right);
+			}
 
-			return s;
+			return Object.keys(s).length > 0 ? s : undefined;
 		},
-		[offset],
+		[offset, style],
 	);
 
 	const viewportModels = deriveViewportModels({
@@ -551,7 +554,7 @@ export function Toaster({
 							position={model.pill}
 							expand={model.expand}
 							icon={item.icon}
-							fill={item.fill ?? (theme ? THEME_FILLS[resolvedTheme] : undefined)}
+							fill={item.fill}
 							styles={item.styles}
 							button={item.button}
 							roundness={item.roundness}

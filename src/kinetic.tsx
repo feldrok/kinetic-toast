@@ -68,7 +68,7 @@ interface View {
 	icon?: ReactNode | null;
 	styles?: KineticStyles;
 	button?: KineticButton;
-	fill: string;
+	fill?: string;
 }
 
 interface KineticProps {
@@ -147,7 +147,7 @@ const GooeyDefs = memo(function GooeyDefs({
 
 export const Kinetic = memo(function Kinetic({
 	id,
-	fill = "#FFFFFF",
+	fill,
 	state = "success",
 	title = state,
 	description,
@@ -466,6 +466,11 @@ export const Kinetic = memo(function Kinetic({
 		[filterId, visualEffects.gooey],
 	);
 
+	const shapeStyle = useMemo<CSSProperties | undefined>(
+		() => (view.fill ? { fill: view.fill } : undefined),
+		[view.fill],
+	);
+
 	/* ------------------------------- Inline styles ---------------------------- */
 
 	const rootStyle = useMemo<CSSProperties & Record<string, string>>(
@@ -611,7 +616,7 @@ export const Kinetic = memo(function Kinetic({
 						data-kinetic-pill
 						rx={resolvedRoundness}
 						ry={resolvedRoundness}
-						fill={view.fill}
+						style={shapeStyle}
 						initial={false}
 						animate={pillAnimate}
 						transition={pillTransition}
@@ -621,7 +626,7 @@ export const Kinetic = memo(function Kinetic({
 						width={WIDTH}
 						rx={resolvedRoundness}
 						ry={resolvedRoundness}
-						fill={view.fill}
+						style={shapeStyle}
 						initial={false}
 						animate={bodyAnimate}
 						transition={bodyTransition}
