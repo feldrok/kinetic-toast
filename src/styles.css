@@ -525,6 +525,16 @@
 	user-select: none;
 }
 
+/*
+ * When the close button is rendered, the X sits absolutely at the toast's
+ * top-right corner and would otherwise overlap the trailing chevron of the
+ * nav cluster. Push the nav left by the close button's width (accounting
+ * for the header's 0.5rem right padding) so they no longer collide.
+ */
+[data-kinetic-toast]:has([data-kinetic-close]) [data-kinetic-nav] {
+	margin-right: calc(var(--kinetic-height) - 0.5rem);
+}
+
 [data-kinetic-nav] button {
 	display: flex;
 	align-items: center;
