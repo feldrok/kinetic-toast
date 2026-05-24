@@ -18,6 +18,53 @@ Kinetic Toast gives you morphing, physics-driven notifications with a small impe
 
 ## Installation
 
+Choose the setup that matches your project.
+
+### shadcn/ui
+
+For shadcn/ui projects, use the registry item. It follows the same basic pattern as shadcn Sonner: add a UI component, render `<Toaster />`, then call the toast helper from client code.
+
+```bash
+npx shadcn@latest add https://raw.githubusercontent.com/feldrok/kinetic-toast/main/public/r/kinetic-toast.json
+# or
+pnpm dlx shadcn@latest add https://raw.githubusercontent.com/feldrok/kinetic-toast/main/public/r/kinetic-toast.json
+# or
+bunx --bun shadcn@latest add https://raw.githubusercontent.com/feldrok/kinetic-toast/main/public/r/kinetic-toast.json
+```
+
+Render `<Toaster />` once in your app shell:
+
+```tsx
+import { Toaster } from "@/components/ui/kinetic-toast";
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <Toaster />
+      </body>
+    </html>
+  );
+}
+```
+
+Use `kinetic` from client code:
+
+```tsx
+"use client";
+
+import { kinetic } from "@/components/ui/kinetic-toast";
+
+kinetic.success({ title: "Saved" });
+```
+
+The registry installs a Sonner-style `components/ui/kinetic-toast.tsx` wrapper plus editable source under `components/ui/kinetic-toast/`. The wrapper imports colocated CSS, so the common setup is one `shadcn add` command plus one `<Toaster />`.
+
+### npm
+
+Once the package is published, install it from npm:
+
 ```bash
 npm install kinetic-toast
 # or
@@ -30,6 +77,12 @@ Import the stylesheet once in your app root:
 
 ```tsx
 import "kinetic-toast/styles.css";
+```
+
+Then import from the package:
+
+```tsx
+import { kinetic, Toaster } from "kinetic-toast";
 ```
 
 ## Quick start
@@ -212,6 +265,20 @@ bun install
 bun run build
 npm pack --dry-run
 ```
+
+### Registry development
+
+```bash
+bun run registry:validate
+bun run registry:build
+bun run registry:check
+```
+
+`registry.json` is the source registry. `public/r` is the static registry output produced by `shadcn build`. The `kinetic-toast` item installs a Sonner-style `@ui/kinetic-toast.tsx` wrapper plus editable source under `@ui/kinetic-toast/`.
+
+### Agent skill
+
+This repo includes `skills/kinetic-toast/SKILL.md`, a concise setup guide an agent can use so requests like “set up Kinetic Toast in this app” follow the preferred shadcn registry flow, client-boundary requirements, and framework-specific CSS notes.
 
 ## License
 

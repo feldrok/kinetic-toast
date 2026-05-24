@@ -1,0 +1,61 @@
+{
+	"$schema": "https://ui.shadcn.com/schema/registry.json",
+	"name": "kinetic-toast",
+	"homepage": "https://github.com/feldrok/kinetic-toast",
+	"items": [
+		{
+			"name": "kinetic-toast",
+			"type": "registry:ui",
+			"title": "Kinetic Toast",
+			"description": "A physics-based toast notification component for React, installed like shadcn/ui Sonner.",
+			"author": "Feldrok",
+			"categories": [
+				"notification",
+				"toast",
+				"motion",
+				"react"
+			],
+			"dependencies": [
+				"motion"
+			],
+			"files": [
+				{
+					"path": "registry/kinetic-toast/kinetic-toast.tsx",
+					"type": "registry:ui",
+					"target": "@ui/kinetic-toast.tsx"
+				},
+				{
+					"path": "registry/kinetic-toast/toast.tsx",
+					"type": "registry:ui",
+					"target": "@ui/kinetic-toast/toast.tsx"
+				},
+				{
+					"path": "registry/kinetic-toast/kinetic.tsx",
+					"type": "registry:ui",
+					"target": "@ui/kinetic-toast/kinetic.tsx"
+				},
+				{
+					"path": "registry/kinetic-toast/constants.ts",
+					"type": "registry:ui",
+					"target": "@ui/kinetic-toast/constants.ts"
+				},
+				{
+					"path": "registry/kinetic-toast/icons.tsx",
+					"type": "registry:ui",
+					"target": "@ui/kinetic-toast/icons.tsx"
+				},
+				{
+					"path": "registry/kinetic-toast/types.ts",
+					"type": "registry:ui",
+					"target": "@ui/kinetic-toast/types.ts"
+				},
+				{
+					"path": "registry/kinetic-toast/styles.css",
+					"type": "registry:file",
+					"target": "@ui/kinetic-toast/styles.css"
+				}
+			],
+			"docs": "Add the component, then import `Toaster` from your shadcn UI path (for example `@/components/ui/kinetic-toast`) and render it once in your app layout. Trigger notifications from client components with `kinetic.success({ title: \"Saved\" })`. The wrapper imports colocated CSS for Sonner-like one-step setup. If a legacy Next.js Pages Router app rejects this CSS import, move it to `pages/_app.tsx`."
+		}
+	]
+}
