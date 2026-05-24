@@ -4,15 +4,13 @@ These harnesses are manual profiling targets for local development. They are int
 
 ## React stress harness
 
-Build the package, serve the repository root, then open the React stress page:
+Build the package and start the benchmark server, then open the React stress page:
 
 ```bash
-bun run build
-python3 -m http.server 4173
-open http://localhost:4173/benchmarks/react-stress.html
+bun run benchmark
 ```
 
-Use browser performance tools to compare:
+The server prints the local URL. If you already have a fresh build, run `bun run benchmark:serve` instead. Use browser performance tools to compare:
 
 - burst rendering with many toasts
 - promise state transitions
