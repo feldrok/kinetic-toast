@@ -205,6 +205,8 @@ await kinetic.promise(fetchUser(), {
 
 ## Toast options
 
+`KineticOptions` is the React adapter option type. The package also exports `CoreKineticOptions` for framework-neutral fields shared by future adapters.
+
 ```ts
 type KineticOptions = {
   id?: string;

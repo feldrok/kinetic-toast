@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
+import type { CoreKineticOptions } from "./core-types";
 
-export type KineticState =
-	| "success"
-	| "loading"
-	| "error"
-	| "warning"
-	| "info"
-	| "action";
+export { KINETIC_POSITIONS } from "./core-types";
+export type {
+	CoreKineticOptions,
+	KineticAutopilotOptions,
+	KineticPosition,
+	KineticState,
+} from "./core-types";
 
 export interface KineticStyles {
 	title?: string;
@@ -20,28 +21,11 @@ export interface KineticButton {
 	onClick: () => void;
 }
 
-export const KINETIC_POSITIONS = [
-	"top-left",
-	"top-center",
-	"top-right",
-	"bottom-left",
-	"bottom-center",
-	"bottom-right",
-] as const;
-
-export type KineticPosition = (typeof KINETIC_POSITIONS)[number];
-
-export interface KineticOptions {
-	id?: string;
-	title?: string;
+export interface ReactKineticOptions extends CoreKineticOptions {
 	description?: ReactNode | string;
-	type?: KineticState;
-	position?: KineticPosition;
-	duration?: number | null;
 	icon?: ReactNode | null;
 	styles?: KineticStyles;
-	fill?: string;
-	roundness?: number;
-	autopilot?: boolean | { expand?: number; collapse?: number };
 	button?: KineticButton;
 }
+
+export type KineticOptions = ReactKineticOptions;
