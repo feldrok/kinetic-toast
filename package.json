@@ -50,7 +50,10 @@
 	"scripts": {
 		"build": "rm -rf dist && bunchee && cp src/styles.css dist/styles.css",
 		"dev": "bunchee --watch",
-		"prepack": "bun run build"
+		"prepack": "bun run build",
+		"registry:validate": "bunx --bun shadcn@latest registry validate",
+		"registry:build": "bunx --bun shadcn@latest build --output public/r",
+		"registry:check": "bun run registry:validate && bun run registry:build && bunx --bun shadcn@latest view ./public/r/kinetic-toast.json"
 	},
 	"peerDependencies": {
 		"react": ">=18",
