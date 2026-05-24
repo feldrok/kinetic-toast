@@ -7,43 +7,160 @@
 		<link rel="stylesheet" href="../dist/styles.css" />
 		<style>
 			:root {
-				color-scheme: dark;
+				--bg: #ffffff;
+				--surface: #fafafa;
+				--surface-hover: #f4f4f5;
+				--border: #e4e4e7;
+				--border-strong: #d4d4d8;
+				--text: #18181b;
+				--text-muted: #52525b;
+				--text-faint: #71717a;
+				--accent-bg: #eff6ff;
+				--accent-border: #93c5fd;
+				--accent-text: #1d4ed8;
+				color-scheme: light;
 				font-family:
 					Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
 					"Segoe UI", sans-serif;
 			}
 
+			[data-theme="dark"] {
+				--bg: #09090b;
+				--surface: #18181b;
+				--surface-hover: #27272a;
+				--border: #27272a;
+				--border-strong: #3f3f46;
+				--text: #fafafa;
+				--text-muted: #a1a1aa;
+				--text-faint: #71717a;
+				--accent-bg: #172554;
+				--accent-border: #1d4ed8;
+				--accent-text: #bfdbfe;
+				color-scheme: dark;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
 			body {
 				min-height: 100vh;
 				margin: 0;
-				background: #09090b;
-				color: #fafafa;
+				background: var(--bg);
+				color: var(--text);
+				transition: background-color 150ms ease, color 150ms ease;
 			}
 
-			main {
-				max-width: 980px;
-				padding: 48px;
+			.shell {
+				max-width: 720px;
+				margin: 0 auto;
+				padding: 24px 24px 96px;
 			}
 
-			p {
-				color: #a1a1aa;
+			.topbar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 8px 0 32px;
+			}
+
+			.brand {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				font-size: 0.875rem;
+				font-weight: 600;
+				color: var(--text);
+				letter-spacing: -0.01em;
+			}
+
+			.brand-mark {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 24px;
+				height: 24px;
+				border-radius: 7px;
+				background: var(--text);
+				color: var(--bg);
+				font-size: 0.75rem;
+				font-weight: 700;
+			}
+
+			.theme-toggle {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 34px;
+				height: 34px;
+				padding: 0;
+				border: 1px solid var(--border);
+				border-radius: 10px;
+				background: var(--surface);
+				color: var(--text-muted);
+				cursor: pointer;
+			}
+
+			.theme-toggle:hover {
+				background: var(--surface-hover);
+				color: var(--text);
+			}
+
+			.theme-toggle svg {
+				width: 16px;
+				height: 16px;
+			}
+
+			.theme-toggle .icon-sun {
+				display: none;
+			}
+
+			[data-theme="dark"] .theme-toggle .icon-sun {
+				display: block;
+			}
+
+			[data-theme="dark"] .theme-toggle .icon-moon {
+				display: none;
+			}
+
+			.hero {
+				text-align: center;
+				margin: 0 auto 40px;
+				max-width: 520px;
+			}
+
+			.hero h1 {
+				margin: 0 0 12px;
+				font-size: 1.75rem;
+				font-weight: 600;
+				letter-spacing: -0.02em;
+				color: var(--text);
+			}
+
+			.hero p {
+				margin: 0;
+				color: var(--text-muted);
 				line-height: 1.6;
+				font-size: 0.9375rem;
 			}
 
 			.panel {
 				display: grid;
-				gap: 18px;
-				margin: 32px 0;
+				gap: 16px;
 			}
 
 			.group {
 				display: grid;
 				gap: 10px;
+				padding: 18px;
+				border: 1px solid var(--border);
+				border-radius: 14px;
+				background: var(--surface);
 			}
 
 			.group-label {
-				color: #71717a;
-				font-size: 0.75rem;
+				color: var(--text-faint);
+				font-size: 0.6875rem;
 				font-weight: 700;
 				letter-spacing: 0.08em;
 				text-transform: uppercase;
@@ -52,39 +169,61 @@
 			.controls {
 				display: flex;
 				flex-wrap: wrap;
-				gap: 12px;
+				gap: 8px;
 			}
 
-			button {
-				border: 1px solid #3f3f46;
+			button.pill {
+				border: 1px solid var(--border-strong);
 				border-radius: 999px;
-				background: #18181b;
-				color: #fafafa;
+				background: var(--bg);
+				color: var(--text);
 				cursor: pointer;
 				font: inherit;
-				padding: 10px 14px;
+				font-size: 0.8125rem;
+				padding: 7px 12px;
+				transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 			}
 
-			button:hover {
-				background: #27272a;
+			button.pill:hover {
+				background: var(--surface-hover);
 			}
 
-			button[aria-pressed="true"] {
-				border-color: #93c5fd;
-				background: #172554;
-				color: #bfdbfe;
+			button.pill[aria-pressed="true"] {
+				border-color: var(--accent-border);
+				background: var(--accent-bg);
+				color: var(--accent-text);
 			}
 
 			pre {
-				max-width: 760px;
+				margin: 24px 0 0;
 				overflow: auto;
-				border: 1px solid #27272a;
-				border-radius: 16px;
-				background: #18181b;
-				padding: 16px;
-				color: #d4d4d8;
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				background: var(--surface);
+				padding: 14px 16px;
+				color: var(--text-muted);
+				font-size: 0.8125rem;
+				line-height: 1.6;
 			}
 		</style>
+		<script>
+			(function () {
+				try {
+					var stored = localStorage.getItem("kinetic-harness-theme");
+					var prefersDark =
+						window.matchMedia &&
+						window.matchMedia("(prefers-color-scheme: dark)").matches;
+					var resolved = stored === "light" || stored === "dark"
+						? stored
+						: prefersDark
+							? "dark"
+							: "light";
+					document.documentElement.setAttribute("data-theme", resolved);
+				} catch (err) {
+					document.documentElement.setAttribute("data-theme", "light");
+				}
+			})();
+		</script>
 		<script type="importmap">
 			{
 			  "imports": {
@@ -101,7 +240,7 @@
 	<body>
 		<div id="root"></div>
 		<script type="module">
-			import React, { useCallback, useRef, useState } from "react";
+			import React, { useCallback, useEffect, useRef, useState } from "react";
 			import { createRoot } from "react-dom/client";
 			import { kinetic, Toaster } from "../dist/index.mjs";
 
@@ -125,6 +264,7 @@
 			];
 
 			const previewToastId = "kinetic-playground-preview";
+			const THEME_STORAGE_KEY = "kinetic-harness-theme";
 
 			const customIcon = React.createElement(
 				"span",
@@ -239,10 +379,30 @@
 				}
 			};
 
+			const readInitialTheme = () => {
+				if (typeof document === "undefined") return "light";
+				const attr = document.documentElement.getAttribute("data-theme");
+				return attr === "dark" ? "dark" : "light";
+			};
+
 			function App() {
 				const [position, setPosition] = useState("top-right");
 				const [variant, setVariant] = useState("success");
+				const [theme, setTheme] = useState(readInitialTheme);
 				const hasPreviewRef = useRef(false);
+
+				useEffect(() => {
+					document.documentElement.setAttribute("data-theme", theme);
+					try {
+						localStorage.setItem(THEME_STORAGE_KEY, theme);
+					} catch (err) {
+						/* ignore */
+					}
+				}, [theme]);
+
+				const toggleTheme = useCallback(() => {
+					setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+				}, []);
 
 				const showPreview = useCallback((nextVariant, nextPosition) => {
 					hasPreviewRef.current = true;
@@ -266,107 +426,192 @@
 					null,
 					React.createElement(Toaster, {
 						position,
-						theme: "system",
+						theme,
 						closeButton: true,
 						navigation: true,
 					}),
 					React.createElement(
-						"main",
-						null,
-						React.createElement("h1", null, "Kinetic Toast stress harness"),
+						"div",
+						{ className: "shell" },
 						React.createElement(
-							"p",
-							null,
-							"Pick a position and type to update one stable preview toast. Stress scenarios still create independent toasts so stack behavior remains testable.",
+							"header",
+							{ className: "topbar" },
+							React.createElement(
+								"div",
+								{ className: "brand" },
+								React.createElement("span", { className: "brand-mark" }, "K"),
+								"Kinetic Toast",
+							),
+							React.createElement(
+								"button",
+								{
+									type: "button",
+									className: "theme-toggle",
+									onClick: toggleTheme,
+									"aria-label": theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
+									title: theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
+								},
+								React.createElement(
+									"svg",
+									{
+										className: "icon-moon",
+										viewBox: "0 0 24 24",
+										fill: "none",
+										stroke: "currentColor",
+										strokeWidth: 2,
+										strokeLinecap: "round",
+										strokeLinejoin: "round",
+										"aria-hidden": "true",
+									},
+									React.createElement("path", {
+										d: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",
+									}),
+								),
+								React.createElement(
+									"svg",
+									{
+										className: "icon-sun",
+										viewBox: "0 0 24 24",
+										fill: "none",
+										stroke: "currentColor",
+										strokeWidth: 2,
+										strokeLinecap: "round",
+										strokeLinejoin: "round",
+										"aria-hidden": "true",
+									},
+									React.createElement("circle", { cx: "12", cy: "12", r: "4" }),
+									React.createElement("path", { d: "M12 2v2" }),
+									React.createElement("path", { d: "M12 20v2" }),
+									React.createElement("path", { d: "m4.93 4.93 1.41 1.41" }),
+									React.createElement("path", { d: "m17.66 17.66 1.41 1.41" }),
+									React.createElement("path", { d: "M2 12h2" }),
+									React.createElement("path", { d: "M20 12h2" }),
+									React.createElement("path", { d: "m6.34 17.66-1.41 1.41" }),
+									React.createElement("path", { d: "m19.07 4.93-1.41 1.41" }),
+								),
+							),
 						),
 						React.createElement(
-							"div",
-							{ className: "panel" },
+							"main",
+							null,
 							React.createElement(
-								"section",
-								{ className: "group", "aria-label": "Toast position" },
-								React.createElement("div", { className: "group-label" }, "Position"),
+								"div",
+								{ className: "hero" },
+								React.createElement("h1", null, "Stress harness"),
 								React.createElement(
-									"div",
-									{ className: "controls" },
-									...positions.map((value) =>
+									"p",
+									null,
+									"Pick a position and type to update one stable preview toast. Stress scenarios still create independent toasts so stack behavior remains testable.",
+								),
+							),
+							React.createElement(
+								"div",
+								{ className: "panel" },
+								React.createElement(
+									"section",
+									{ className: "group", "aria-label": "Toast position" },
+									React.createElement("div", { className: "group-label" }, "Position"),
+									React.createElement(
+										"div",
+										{ className: "controls" },
+										...positions.map((value) =>
+											React.createElement(
+												"button",
+												{
+													key: value,
+													type: "button",
+													className: "pill",
+													"aria-pressed": position === value,
+													onClick: () => updatePosition(value),
+												},
+												value,
+											),
+										),
+									),
+								),
+								React.createElement(
+									"section",
+									{ className: "group", "aria-label": "Toast variants" },
+									React.createElement("div", { className: "group-label" }, "Types"),
+									React.createElement(
+										"div",
+										{ className: "controls" },
+										...variants.map((value) =>
+											React.createElement(
+												"button",
+												{
+													key: value,
+													type: "button",
+													className: "pill",
+													"aria-pressed": variant === value,
+													onClick: () => updateVariant(value),
+												},
+												value[0].toUpperCase() + value.slice(1),
+											),
+										),
+									),
+								),
+								React.createElement(
+									"section",
+									{ className: "group", "aria-label": "Stress scenarios" },
+									React.createElement("div", { className: "group-label" }, "Stress"),
+									React.createElement(
+										"div",
+										{ className: "controls" },
 										React.createElement(
 											"button",
 											{
-												key: value,
 												type: "button",
-												"aria-pressed": position === value,
-												onClick: () => updatePosition(value),
+												className: "pill",
+												onClick: () => burst(25, position),
 											},
-											value,
+											"Burst 25",
+										),
+										React.createElement(
+											"button",
+											{
+												type: "button",
+												className: "pill",
+												onClick: () => burst(75, position),
+											},
+											"Burst 75",
+										),
+										React.createElement(
+											"button",
+											{
+												type: "button",
+												className: "pill",
+												onClick: () =>
+													burst(75, position, { performanceMode: "minimal" }),
+											},
+											"Burst 75 minimal",
+										),
+										React.createElement(
+											"button",
+											{
+												type: "button",
+												className: "pill",
+												onClick: () => promiseCycle(position),
+											},
+											"Promise cycle",
+										),
+										React.createElement(
+											"button",
+											{
+												type: "button",
+												className: "pill",
+												onClick: () => kinetic.clear(),
+											},
+											"Clear",
 										),
 									),
 								),
 							),
 							React.createElement(
-								"section",
-								{ className: "group", "aria-label": "Toast variants" },
-								React.createElement("div", { className: "group-label" }, "Types"),
-								React.createElement(
-									"div",
-									{ className: "controls" },
-									...variants.map((value) =>
-										React.createElement(
-											"button",
-											{
-												key: value,
-												type: "button",
-												"aria-pressed": variant === value,
-												onClick: () => updateVariant(value),
-											},
-											value[0].toUpperCase() + value.slice(1),
-										),
-									),
-								),
+								"pre",
+								null,
+								"bun run benchmark\nopen http://localhost:4173/benchmarks/react-stress.html",
 							),
-							React.createElement(
-								"section",
-								{ className: "group", "aria-label": "Stress scenarios" },
-								React.createElement("div", { className: "group-label" }, "Stress"),
-								React.createElement(
-									"div",
-									{ className: "controls" },
-									React.createElement(
-										"button",
-										{ type: "button", onClick: () => burst(25, position) },
-										"Burst 25",
-									),
-									React.createElement(
-										"button",
-										{ type: "button", onClick: () => burst(75, position) },
-										"Burst 75",
-									),
-									React.createElement(
-										"button",
-										{
-											type: "button",
-											onClick: () =>
-												burst(75, position, { performanceMode: "minimal" }),
-										},
-										"Burst 75 minimal",
-									),
-									React.createElement(
-										"button",
-										{ type: "button", onClick: () => promiseCycle(position) },
-										"Promise cycle",
-									),
-									React.createElement(
-										"button",
-										{ type: "button", onClick: () => kinetic.clear() },
-										"Clear",
-									),
-								),
-							),
-						),
-						React.createElement(
-							"pre",
-							null,
-							"bun run benchmark\nopen http://localhost:4173/benchmarks/react-stress.html",
 						),
 					),
 				);
