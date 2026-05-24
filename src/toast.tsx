@@ -11,7 +11,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
-	ADVANCE_DELAY,
 	AUTO_COLLAPSE_DELAY,
 	AUTO_EXPAND_DELAY,
 	DEFAULT_MAX_AGE,
@@ -114,9 +113,9 @@ const getSelectedToastId = (
 	if (selectedId && items.some((toast) => toast.id === selectedId)) {
 		return selectedId;
 	}
-	// Default to the oldest live toast so a freshly populated stack starts
-	// from the bottom and the auto-advance timer can step toward latest.
-	return (live[0] ?? items[0])?.id;
+	// Default to the newest live toast so brand-new arrivals are visible
+	// immediately. Older toasts remain reachable through `<` `>`.
+	return (live[live.length - 1] ?? items[items.length - 1])?.id;
 };
 
 const deriveViewportModels = ({
@@ -379,12 +378,6 @@ export function Toaster({
 	// Wall-clock max-age timers. Separate from `timersRef` because they MUST
 	// NOT pause on hover — even sticky toasts should age out of the nav queue.
 	const maxAgeTimersRef = useRef(new Map<string, number>());
-	// Auto-advance: one timer per position. When selectedId for a position is
-	// not the latest, the timer steps selection forward after ADVANCE_DELAY.
-	// Hover pauses; manual nav (`<`/`>`) puts the position in manualModeRef
-	// for the lifetime of that stack and disables advance entirely.
-	const advanceTimersRef = useRef(new Map<KineticPosition, number>());
-	const manualModeRef = useRef(new Set<KineticPosition>());
 	const listRef = useRef<readonly KineticItem[]>(toasts);
 	const latestRef = useRef<string | undefined>(undefined);
 	const prevLiveIdsRef = useRef(new Set<string>());
@@ -469,59 +462,12 @@ export function Toaster({
 		[maxAge],
 	);
 
-	const cancelAdvance = useCallback((pos: KineticPosition) => {
-		const timer = advanceTimersRef.current.get(pos);
-		if (timer !== undefined) {
-			clearTimeout(timer);
-			advanceTimersRef.current.delete(pos);
-		}
-	}, []);
-
-	const clearAllAdvanceTimers = useCallback(() => {
-		for (const t of advanceTimersRef.current.values()) clearTimeout(t);
-		advanceTimersRef.current.clear();
-	}, []);
-
-	const scheduleAdvance = useCallback(
-		(pos: KineticPosition) => {
-			if (manualModeRef.current.has(pos)) return;
-			if (hoverRef.current) return;
-			if (advanceTimersRef.current.has(pos)) return;
-
-			advanceTimersRef.current.set(
-				pos,
-				window.setTimeout(() => {
-					advanceTimersRef.current.delete(pos);
-					if (manualModeRef.current.has(pos)) return;
-					// Re-derive from latest store snapshot, not closure state.
-					const live = store
-						.getSnapshot()
-						.filter(
-							(t) =>
-								(t.position ?? defaultPosition) === pos && !t.exiting,
-						);
-					if (live.length <= 1) return;
-					setSelectedIds((prev) => {
-						const currentId = prev[pos] ?? live[0]?.id;
-						const idx = live.findIndex((t) => t.id === currentId);
-						if (idx === -1 || idx >= live.length - 1) return prev;
-						const nextId = live[idx + 1]?.id;
-						if (!nextId || nextId === prev[pos]) return prev;
-						return { ...prev, [pos]: nextId };
-					});
-				}, ADVANCE_DELAY),
-			);
-		},
-		[],
-	);
-
 	useEffect(
 		() => () => {
 			clearAllTimers();
 			clearAllMaxAgeTimers();
-			clearAllAdvanceTimers();
 		},
-		[clearAllTimers, clearAllMaxAgeTimers, clearAllAdvanceTimers],
+		[clearAllTimers, clearAllMaxAgeTimers],
 	);
 
 	useEffect(() => {
@@ -569,47 +515,7 @@ export function Toaster({
 		// the timer for an existing toast preserves its absolute deadline.
 		clearAllMaxAgeTimers();
 		scheduleMaxAge(toasts);
-
-		// Reset manual-mode + cancel advance timer for any position that has
-		// fully drained, so the next stack at that position starts in auto
-		// mode and from the oldest.
-		for (const pos of Array.from(manualModeRef.current)) {
-			if (!livePositions.has(pos)) manualModeRef.current.delete(pos);
-		}
-		for (const pos of Array.from(advanceTimersRef.current.keys())) {
-			if (!livePositions.has(pos)) cancelAdvance(pos);
-		}
-
-		// Schedule an advance timer for each populated position where the
-		// current selection is older than the latest. The scheduler is a
-		// no-op when one already exists, when the position is in manual
-		// mode, or while the user is hovering.
-		for (const pos of livePositions) {
-			const posLive = currentLive.filter(
-				(t) => (t.position ?? position) === pos,
-			);
-			if (posLive.length <= 1) {
-				cancelAdvance(pos);
-				continue;
-			}
-			const currentId = selectedIds[pos] ?? posLive[0]?.id;
-			const idx = posLive.findIndex((t) => t.id === currentId);
-			if (idx === -1 || idx >= posLive.length - 1) {
-				cancelAdvance(pos);
-				continue;
-			}
-			scheduleAdvance(pos);
-		}
-	}, [
-		toasts,
-		schedule,
-		scheduleMaxAge,
-		clearAllMaxAgeTimers,
-		scheduleAdvance,
-		cancelAdvance,
-		selectedIds,
-		position,
-	]);
+	}, [toasts, schedule, scheduleMaxAge, clearAllMaxAgeTimers, position]);
 
 	const handleMouseEnterRef =
 		useRef<MouseEventHandler<HTMLDivElement>>(null);
@@ -622,8 +528,7 @@ export function Toaster({
 		if (hoverRef.current) return;
 		hoverRef.current = true;
 		clearAllTimers();
-		clearAllAdvanceTimers();
-	}, [clearAllTimers, clearAllAdvanceTimers]);
+	}, [clearAllTimers]);
 
 	handleMouseLeaveRef.current = useCallback<
 		MouseEventHandler<HTMLDivElement>
@@ -631,14 +536,7 @@ export function Toaster({
 		if (!hoverRef.current) return;
 		hoverRef.current = false;
 		schedule(listRef.current);
-		// Re-schedule advance for any position still in scope on unhover.
-		const livePositions = new Set(
-			listRef.current
-				.filter((t) => !t.exiting)
-				.map((t) => t.position ?? position),
-		);
-		for (const pos of livePositions) scheduleAdvance(pos);
-	}, [schedule, scheduleAdvance, position]);
+	}, [schedule]);
 
 	const latest = useMemo(() => {
 		for (let i = toasts.length - 1; i >= 0; i--) {
@@ -707,11 +605,6 @@ export function Toaster({
 
 	const navigate = useCallback(
 		(pos: KineticPosition, dir: -1 | 1) => {
-			// User-initiated navigation switches the position into manual mode
-			// for the lifetime of this stack — auto-advance stays off until
-			// every toast in this position drains.
-			manualModeRef.current.add(pos);
-			cancelAdvance(pos);
 			const items =
 				groupToastsByPosition(listRef.current, position).get(pos) ?? [];
 			const live = items.filter((toast) => !toast.exiting);
@@ -719,7 +612,7 @@ export function Toaster({
 				const currentId =
 					prev[pos] && live.some((toast) => toast.id === prev[pos])
 						? prev[pos]
-						: live[0]?.id;
+						: live[live.length - 1]?.id;
 				const currentIndex = live.findIndex((toast) => toast.id === currentId);
 				const nextIndex = Math.max(
 					0,
@@ -730,7 +623,7 @@ export function Toaster({
 				return { ...prev, [pos]: nextId };
 			});
 		},
-		[cancelAdvance, position],
+		[position],
 	);
 
 	const viewports = viewportModels.map((model) => {
