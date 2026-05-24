@@ -50,6 +50,7 @@ export interface SileoToasterProps {
 	options?: Partial<SileoOptions>;
 	theme?: "light" | "dark" | "system";
 	closeButton?: boolean;
+	navigation?: boolean;
 }
 
 /* ------------------------------ Global State ------------------------------ */
@@ -267,16 +268,21 @@ export function Toaster({
 	options,
 	theme,
 	closeButton = false,
+	navigation = false,
 }: SileoToasterProps) {
 	const resolvedTheme = useResolvedTheme(theme);
 	const [toasts, setToasts] = useState<SileoItem[]>(store.toasts);
 	const [activeId, setActiveId] = useState<string>();
 	const [mounted, setMounted] = useState(false);
+	const [selectedIds, setSelectedIds] = useState<
+		Partial<Record<SileoPosition, string>>
+	>({});
 
 	const hoverRef = useRef(false);
 	const timersRef = useRef(new Map<string, number>());
 	const listRef = useRef(toasts);
 	const latestRef = useRef<string | undefined>(undefined);
+	const prevLiveIdsRef = useRef(new Set<string>());
 	const handlersCache = useRef(
 		new Map<
 			string,
@@ -345,8 +351,22 @@ export function Toaster({
 			if (!toastIds.has(id)) handlersCache.current.delete(id);
 		}
 
+		const currentLive = toasts.filter((t) => !t.exiting);
+		const newToasts = currentLive.filter((t) => !prevLiveIdsRef.current.has(t.id));
+		if (newToasts.length > 0) {
+			setSelectedIds((prev) => {
+				const next = { ...prev };
+				for (const t of newToasts) {
+					const pos = t.position ?? position;
+					delete next[pos];
+				}
+				return next;
+			});
+		}
+		prevLiveIdsRef.current = new Set(currentLive.map((t) => t.id));
+
 		schedule(toasts);
-	}, [toasts, schedule]);
+	}, [toasts, schedule, position]);
 
 	const handleMouseEnterRef =
 		useRef<MouseEventHandler<HTMLButtonElement>>(null);
@@ -440,60 +460,91 @@ export function Toaster({
 		return map;
 	}, [toasts, position]);
 
+	const navigate = useCallback(
+		(pos: SileoPosition, dir: -1 | 1) => {
+			const items = activePositions.get(pos) ?? [];
+			const live = items.filter((t) => !t.exiting);
+			setSelectedIds((prev) => {
+				const rawSel = prev[pos];
+				const curId =
+					rawSel && live.find((t) => t.id === rawSel)
+						? rawSel
+						: live.at(-1)?.id;
+				const curIdx = live.findIndex((t) => t.id === curId);
+				const nextIdx = Math.max(0, Math.min(live.length - 1, curIdx + dir));
+				const nextId = live[nextIdx]?.id;
+				if (!nextId || nextId === prev[pos]) return prev;
+				return { ...prev, [pos]: nextId };
+			});
+		},
+		[activePositions],
+	);
+
+	const viewports = Array.from(activePositions, ([pos, items]) => {
+		const pill = pillAlign(pos);
+		const expand = expandDir(pos);
+		const live = items.filter((t) => !t.exiting);
+		const rawSel = selectedIds[pos];
+		const selId =
+			rawSel && items.find((t) => t.id === rawSel)
+				? rawSel
+				: (live.at(-1) ?? items.at(-1))?.id;
+		const displayItem = items.find((t) => t.id === selId);
+		const showNav = navigation && live.length > 1 && !displayItem?.exiting;
+		const selIdx = live.findIndex((t) => t.id === selId);
+
+		return (
+			<section
+				key={pos}
+				data-sileo-viewport
+				data-position={pos}
+				data-theme={theme ? resolvedTheme : undefined}
+				aria-live="polite"
+				style={getViewportStyle(pos)}
+			>
+				{items.map((item) => {
+					const isSelected = item.id === selId;
+					if (navigation && !isSelected && !item.exiting) return null;
+					const h = getHandlers(item.id);
+					return (
+						<Sileo
+							key={item.id}
+							id={item.id}
+							state={item.state}
+							title={item.title}
+							description={item.description}
+							position={pill}
+							expand={expand}
+							icon={item.icon}
+							fill={item.fill ?? (theme ? THEME_FILLS[resolvedTheme] : undefined)}
+							styles={item.styles}
+							button={item.button}
+							roundness={item.roundness}
+							exiting={item.exiting}
+							autoExpandDelayMs={item.autoExpandDelayMs}
+							autoCollapseDelayMs={item.autoCollapseDelayMs}
+							refreshKey={item.instanceId}
+							canExpand={activeId === undefined || activeId === item.id}
+							closeButton={closeButton}
+							navIndex={showNav && isSelected ? selIdx : undefined}
+							navTotal={showNav && isSelected ? live.length : undefined}
+							onNavigate={(dir) => navigate(pos, dir)}
+							onMouseEnter={h.enter}
+							onMouseLeave={h.leave}
+							onDismiss={h.dismiss}
+						/>
+					);
+				})}
+			</section>
+		);
+	});
+
 	return (
 		<>
 			{children}
 			{!mounted || typeof document === "undefined"
 				? null
-				: createPortal(
-						<>
-							{Array.from(activePositions, ([pos, items]) => {
-				const pill = pillAlign(pos);
-				const expand = expandDir(pos);
-
-				return (
-					<section
-						key={pos}
-						data-sileo-viewport
-						data-position={pos}
-						data-theme={theme ? resolvedTheme : undefined}
-						aria-live="polite"
-						style={getViewportStyle(pos)}
-					>
-						{items.map((item) => {
-							const h = getHandlers(item.id);
-							return (
-								<Sileo
-									key={item.id}
-									id={item.id}
-									state={item.state}
-									title={item.title}
-									description={item.description}
-									position={pill}
-									expand={expand}
-									icon={item.icon}
-									fill={item.fill ?? (theme ? THEME_FILLS[resolvedTheme] : undefined)}
-									styles={item.styles}
-									button={item.button}
-									roundness={item.roundness}
-									exiting={item.exiting}
-									autoExpandDelayMs={item.autoExpandDelayMs}
-									autoCollapseDelayMs={item.autoCollapseDelayMs}
-									refreshKey={item.instanceId}
-									canExpand={activeId === undefined || activeId === item.id}
-									closeButton={closeButton}
-									onMouseEnter={h.enter}
-									onMouseLeave={h.leave}
-									onDismiss={h.dismiss}
-								/>
-							);
-						})}
-					</section>
-				);
-			})}
-						</>,
-						document.body,
-					)}
+				: createPortal(<>{viewports}</>, document.body)}
 		</>
 	);
 }

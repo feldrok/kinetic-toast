@@ -26,6 +26,8 @@ import {
 import {
 	ArrowRight,
 	Check,
+	ChevronLeft,
+	ChevronRight,
 	CircleAlert,
 	LifeBuoy,
 	LoaderCircle,
@@ -66,6 +68,9 @@ interface SileoProps {
 	interruptKey?: string;
 	refreshKey?: string;
 	closeButton?: boolean;
+	navIndex?: number;
+	navTotal?: number;
+	onNavigate?: (dir: -1 | 1) => void;
 	onMouseEnter?: MouseEventHandler<HTMLButtonElement>;
 	onMouseLeave?: MouseEventHandler<HTMLButtonElement>;
 	onDismiss?: () => void;
@@ -135,6 +140,9 @@ export const Sileo = memo(function Sileo({
 	interruptKey,
 	refreshKey,
 	closeButton = false,
+	navIndex,
+	navTotal,
+	onNavigate,
 	onMouseEnter,
 	onMouseLeave,
 	onDismiss,
@@ -387,6 +395,7 @@ export const Sileo = memo(function Sileo({
 
 	/* ------------------------------ Derived values ---------------------------- */
 
+	const showNav = navTotal !== undefined && navTotal > 1;
 	const minExpanded = HEIGHT * MIN_EXPAND_RATIO;
 	const rawExpanded = hasDesc
 		? Math.max(minExpanded, HEIGHT + contentHeight)
@@ -400,7 +409,8 @@ export const Sileo = memo(function Sileo({
 	const expanded = open ? rawExpanded : frozenExpandedRef.current;
 	const svgHeight = hasDesc ? Math.max(expanded, minExpanded) : HEIGHT;
 	const expandedContent = Math.max(0, expanded - HEIGHT);
-	const resolvedPillWidth = Math.max(pillWidth || HEIGHT, HEIGHT);
+	const navExtra = showNav ? 50 : 0;
+	const resolvedPillWidth = Math.max(pillWidth || HEIGHT, HEIGHT) + navExtra;
 	const pillHeight = HEIGHT + blur * 3;
 
 	const pillX =
@@ -551,6 +561,7 @@ export const Sileo = memo(function Sileo({
 			const target = e.target as HTMLElement;
 			if (target.closest("[data-sileo-button]")) return;
 			if (target.closest("[data-sileo-close]")) return;
+			if (target.closest("[data-sileo-nav]")) return;
 			pointerStartRef.current = e.clientY;
 			e.currentTarget.setPointerCapture(e.pointerId);
 			const el = buttonRef.current;
@@ -659,6 +670,72 @@ export const Sileo = memo(function Sileo({
 						</div>
 					)}
 				</div>
+				{showNav && (
+					<div data-sileo-nav>
+						<div
+							role="button"
+							tabIndex={navIndex === 0 ? -1 : 0}
+							aria-disabled={navIndex === 0}
+							aria-label="Previous notification"
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								if (navIndex !== 0) onNavigate?.(-1);
+							}}
+							onKeyDown={(e) => {
+								if (e.key !== "Enter" && e.key !== " ") return;
+								e.preventDefault();
+								e.stopPropagation();
+								if (navIndex !== 0) onNavigate?.(-1);
+							}}
+						>
+							<ChevronLeft />
+						</div>
+						<div
+							role="button"
+							tabIndex={
+								navIndex !== undefined &&
+								navTotal !== undefined &&
+								navIndex >= navTotal - 1
+									? -1
+									: 0
+							}
+							aria-disabled={
+								navIndex !== undefined &&
+								navTotal !== undefined &&
+								navIndex >= navTotal - 1
+							}
+							aria-label="Next notification"
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								if (
+									navIndex !== undefined &&
+									navTotal !== undefined &&
+									navIndex >= navTotal - 1
+								) {
+									return;
+								}
+								onNavigate?.(1);
+							}}
+							onKeyDown={(e) => {
+								if (e.key !== "Enter" && e.key !== " ") return;
+								e.preventDefault();
+								e.stopPropagation();
+								if (
+									navIndex !== undefined &&
+									navTotal !== undefined &&
+									navIndex >= navTotal - 1
+								) {
+									return;
+								}
+								onNavigate?.(1);
+							}}
+						>
+							<ChevronRight />
+						</div>
+					</div>
+				)}
 			</div>
 
 			{closeButton && onDismiss && (
