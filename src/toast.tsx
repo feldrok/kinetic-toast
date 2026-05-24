@@ -8,6 +8,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
 	AUTO_COLLAPSE_DELAY,
 	AUTO_EXPAND_DELAY,
@@ -268,6 +269,7 @@ export function Toaster({
 	const resolvedTheme = useResolvedTheme(theme);
 	const [toasts, setToasts] = useState<SileoItem[]>(store.toasts);
 	const [activeId, setActiveId] = useState<string>();
+	const [mounted, setMounted] = useState(false);
 
 	const hoverRef = useRef(false);
 	const timersRef = useRef(new Map<string, number>());
@@ -288,6 +290,10 @@ export function Toaster({
 		store.position = position;
 		store.options = options;
 	}, [position, options]);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	const clearAllTimers = useCallback(() => {
 		for (const t of timersRef.current.values()) clearTimeout(t);
@@ -435,7 +441,11 @@ export function Toaster({
 	return (
 		<>
 			{children}
-			{Array.from(activePositions, ([pos, items]) => {
+			{!mounted || typeof document === "undefined"
+				? null
+				: createPortal(
+						<>
+							{Array.from(activePositions, ([pos, items]) => {
 				const pill = pillAlign(pos);
 				const expand = expandDir(pos);
 
@@ -478,6 +488,9 @@ export function Toaster({
 					</section>
 				);
 			})}
+						</>,
+						document.body,
+					)}
 		</>
 	);
 }
