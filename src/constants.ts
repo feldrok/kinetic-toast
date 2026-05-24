@@ -22,6 +22,14 @@ export const AUTO_COLLAPSE_DELAY = DEFAULT_TOAST_DURATION - 2000;
 // or opt out with `maxAge: null`.
 export const DEFAULT_MAX_AGE = 60000;
 
+// Auto-advance interval for navigation stacks. While the user is viewing
+// the head of an older toast and a newer one is queued behind it, this
+// is how long the current toast stays before the viewport advances one
+// step toward the latest. Hover pauses the timer; clicking `<` or `>`
+// switches that position into manual mode and disables auto-advance
+// until the position empties.
+export const ADVANCE_DELAY = 3000;
+
 export const SPRING = {
 	type: "spring" as const,
 	bounce: 0.25,
