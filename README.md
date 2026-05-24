@@ -297,6 +297,10 @@ bun run registry:build
 bun run registry:check
 ```
 
+### Performance harnesses
+
+See [`benchmarks/README.md`](benchmarks/README.md) for local stress harnesses used to profile burst rendering, promise transitions, navigation, and visual performance modes.
+
 `registry.json` is the source registry. `public/r` is the static registry output produced by `shadcn build`. The `kinetic-toast` item installs a Sonner-style `@ui/kinetic-toast.tsx` wrapper plus editable source under `@ui/kinetic-toast/`.
 
 ### Agent skill
