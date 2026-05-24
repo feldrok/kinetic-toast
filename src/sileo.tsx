@@ -65,6 +65,7 @@ interface SileoProps {
 	canExpand?: boolean;
 	interruptKey?: string;
 	refreshKey?: string;
+	closeButton?: boolean;
 	onMouseEnter?: MouseEventHandler<HTMLButtonElement>;
 	onMouseLeave?: MouseEventHandler<HTMLButtonElement>;
 	onDismiss?: () => void;
@@ -133,6 +134,7 @@ export const Sileo = memo(function Sileo({
 	canExpand,
 	interruptKey,
 	refreshKey,
+	closeButton = false,
 	onMouseEnter,
 	onMouseLeave,
 	onDismiss,
@@ -548,6 +550,7 @@ export const Sileo = memo(function Sileo({
 			if (exiting || !onDismiss) return;
 			const target = e.target as HTMLElement;
 			if (target.closest("[data-sileo-button]")) return;
+			if (target.closest("[data-sileo-close]")) return;
 			pointerStartRef.current = e.clientY;
 			e.currentTarget.setPointerCapture(e.pointerId);
 			const el = buttonRef.current;
@@ -657,6 +660,29 @@ export const Sileo = memo(function Sileo({
 					)}
 				</div>
 			</div>
+
+			{closeButton && onDismiss && (
+				<div
+					data-sileo-close
+					role="button"
+					tabIndex={0}
+					aria-label="Close notification"
+					onClick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						onDismiss();
+					}}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							e.stopPropagation();
+							onDismiss();
+						}
+					}}
+				>
+					<X />
+				</div>
+			)}
 
 			{hasDesc && (
 				<div data-sileo-content data-edge={expand} data-visible={open}>

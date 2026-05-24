@@ -448,6 +448,37 @@
 	align-items: center;
 }
 
+/* ----------------------------- Close Button ------------------------------ */
+
+[data-sileo-close] {
+	position: absolute;
+	top: 0;
+	right: 0;
+	z-index: 30;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--sileo-height);
+	height: var(--sileo-height);
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+	pointer-events: auto;
+	color: currentColor;
+	opacity: 0;
+	transition: opacity 150ms ease;
+}
+
+[data-sileo-toast]:hover [data-sileo-close],
+[data-sileo-close]:focus-visible {
+	opacity: 0.65;
+}
+
+[data-sileo-close]:hover {
+	opacity: 1;
+}
+
 @media (prefers-reduced-motion: no-preference) {
 	[data-sileo-toast][data-ready="true"]:hover,
 	[data-sileo-toast][data-ready="true"][data-exiting="true"] {

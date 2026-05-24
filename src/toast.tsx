@@ -49,6 +49,7 @@ export interface SileoToasterProps {
 	offset?: SileoOffsetValue | SileoOffsetConfig;
 	options?: Partial<SileoOptions>;
 	theme?: "light" | "dark" | "system";
+	closeButton?: boolean;
 }
 
 /* ------------------------------ Global State ------------------------------ */
@@ -265,6 +266,7 @@ export function Toaster({
 	offset,
 	options,
 	theme,
+	closeButton = false,
 }: SileoToasterProps) {
 	const resolvedTheme = useResolvedTheme(theme);
 	const [toasts, setToasts] = useState<SileoItem[]>(store.toasts);
@@ -479,6 +481,7 @@ export function Toaster({
 									autoCollapseDelayMs={item.autoCollapseDelayMs}
 									refreshKey={item.instanceId}
 									canExpand={activeId === undefined || activeId === item.id}
+									closeButton={closeButton}
 									onMouseEnter={h.enter}
 									onMouseLeave={h.leave}
 									onDismiss={h.dismiss}
