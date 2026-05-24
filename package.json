@@ -48,7 +48,7 @@
 		"NOTICE.md"
 	],
 	"scripts": {
-		"build": "rm -rf dist && bunchee && cp src/styles.css dist/styles.css",
+		"build": "node scripts/build.mjs",
 		"dev": "bunchee --watch",
 		"prepack": "bun run build",
 		"registry:validate": "bunx --bun shadcn@latest registry validate",
