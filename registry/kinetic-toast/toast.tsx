@@ -102,6 +102,15 @@ const timeoutKey = (t: KineticItem) => `${t.id}:${t.instanceId}`;
 
 /* ------------------------------- Toast API -------------------------------- */
 
+const dismissPosition = (pos: KineticPosition) => {
+	const live = store.toasts.filter(
+		(t) => (t.position ?? store.position) === pos && !t.exiting,
+	);
+	for (const item of live) {
+		dismissToast(item.id, item.instanceId);
+	}
+};
+
 const dismissToast = (id: string, instanceId?: string) => {
 	const item = store.toasts.find((t) =>
 		instanceId ? t.id === id && t.instanceId === instanceId : t.id === id,
@@ -615,6 +624,7 @@ export function Toaster({
 						onMouseEnter={h.enter}
 						onMouseLeave={h.leave}
 						onDismiss={h.dismiss}
+						onClear={() => dismissPosition(pos)}
 					/>
 				</section>
 			);

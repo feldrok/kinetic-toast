@@ -74,6 +74,13 @@ interface KineticProps {
 	onMouseEnter?: MouseEventHandler<HTMLDivElement>;
 	onMouseLeave?: MouseEventHandler<HTMLDivElement>;
 	onDismiss?: () => void;
+	/**
+	 * Stack-level dismiss. Invoked by the inline close button when the X
+	 * is replacing the disabled `>` chevron (multi-toast stack case), so a
+	 * single click clears every toast in this position rather than just
+	 * the currently selected one. Falls back to `onDismiss` when undefined.
+	 */
+	onClear?: () => void;
 }
 
 /* ---------------------------------- Icons --------------------------------- */
@@ -146,6 +153,7 @@ export const Kinetic = memo(function Kinetic({
 	onMouseEnter,
 	onMouseLeave,
 	onDismiss,
+	onClear,
 }: KineticProps) {
 	const next: View = useMemo(
 		() => ({ title, description, state, icon, styles, button, fill }),
@@ -742,11 +750,23 @@ export const Kinetic = memo(function Kinetic({
 							<button
 								type="button"
 								data-kinetic-close
-								aria-label="Close notification"
+								aria-label={
+									showNav
+										? "Close all notifications"
+										: "Close notification"
+								}
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();
-									onDismiss?.();
+									// In the stack case the X replaces a disabled `>`
+									// chevron, so it clears the whole position rather
+									// than dismissing just the selected toast. Solo
+									// close (no nav) keeps single-toast semantics.
+									if (showNav && onClear) {
+										onClear();
+									} else {
+										onDismiss?.();
+									}
 								}}
 							>
 								<X />
