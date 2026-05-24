@@ -7,6 +7,7 @@ import {
 	useMemo,
 	useRef,
 	useState,
+	useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -15,6 +16,7 @@ import {
 	DEFAULT_TOAST_DURATION,
 	EXIT_DURATION,
 } from "./constants";
+import { createKineticStore } from "./core-store";
 import { Kinetic } from "./kinetic";
 import type { KineticOptions, KineticPosition, KineticState } from "./types";
 
@@ -54,23 +56,9 @@ export interface KineticToasterProps {
 
 /* ------------------------------ Global State ------------------------------ */
 
-type KineticListener = (toasts: KineticItem[]) => void;
-
-const store = {
-	toasts: [] as KineticItem[],
-	listeners: new Set<KineticListener>(),
-	position: "top-right" as KineticPosition,
-	options: undefined as Partial<KineticOptions> | undefined,
-
-	emit() {
-		for (const fn of this.listeners) fn(this.toasts);
-	},
-
-	update(fn: (prev: KineticItem[]) => KineticItem[]) {
-		this.toasts = fn(this.toasts);
-		this.emit();
-	},
-};
+const store = createKineticStore<KineticItem>();
+let defaultPosition: KineticPosition = "top-right";
+let defaultOptions: Partial<KineticOptions> | undefined;
 
 let idCounter = 0;
 const generateId = () =>
@@ -81,7 +69,7 @@ const timeoutKey = (t: KineticItem) => `${t.id}:${t.instanceId}`;
 /* ------------------------------- Toast API -------------------------------- */
 
 const dismissToast = (id: string, instanceId?: string) => {
-	const item = store.toasts.find((t) =>
+	const item = store.getSnapshot().find((t) =>
 		instanceId ? t.id === id && t.instanceId === instanceId : t.id === id,
 	);
 	if (!item || item.exiting) return;
@@ -120,9 +108,9 @@ const resolveAutopilot = (
 };
 
 const mergeOptions = (options: InternalKineticOptions) => ({
-	...store.options,
+	...defaultOptions,
 	...options,
-	styles: { ...store.options?.styles, ...options.styles },
+	styles: { ...defaultOptions?.styles, ...options.styles },
 });
 
 const buildKineticItem = (
@@ -136,14 +124,14 @@ const buildKineticItem = (
 		...merged,
 		id,
 		instanceId: generateId(),
-		position: merged.position ?? fallbackPosition ?? store.position,
+		position: merged.position ?? fallbackPosition ?? defaultPosition,
 		autoExpandDelayMs: auto.expandDelayMs,
 		autoCollapseDelayMs: auto.collapseDelayMs,
 	};
 };
 
 const createToast = (options: InternalKineticOptions) => {
-	const live = store.toasts.filter((t) => !t.exiting);
+	const live = store.getSnapshot().filter((t) => !t.exiting);
 	const merged = mergeOptions(options);
 
 	const id = merged.id ?? generateId();
@@ -159,7 +147,7 @@ const createToast = (options: InternalKineticOptions) => {
 };
 
 const updateToast = (id: string, options: InternalKineticOptions) => {
-	const existing = store.toasts.find((t) => t.id === id);
+	const existing = store.getSnapshot().find((t) => t.id === id);
 	if (!existing) return;
 
 	const item = buildKineticItem(mergeOptions(options), id, existing.position);
@@ -270,7 +258,11 @@ export function Toaster({
 	navigation = false,
 }: KineticToasterProps) {
 	const resolvedTheme = useResolvedTheme(theme);
-	const [toasts, setToasts] = useState<KineticItem[]>(store.toasts);
+	const toasts = useSyncExternalStore(
+		store.subscribe,
+		store.getSnapshot,
+		store.getSnapshot,
+	);
 	const [activeId, setActiveId] = useState<string>();
 	const [mounted, setMounted] = useState(false);
 	const [selectedIds, setSelectedIds] = useState<
@@ -279,7 +271,7 @@ export function Toaster({
 
 	const hoverRef = useRef(false);
 	const timersRef = useRef(new Map<string, number>());
-	const listRef = useRef(toasts);
+	const listRef = useRef<readonly KineticItem[]>(toasts);
 	const latestRef = useRef<string | undefined>(undefined);
 	const prevLiveIdsRef = useRef(new Set<string>());
 	const handlersCache = useRef(
@@ -294,14 +286,14 @@ export function Toaster({
 	);
 
 	useEffect(() => {
-		const previousPosition = store.position;
-		const previousOptions = store.options;
-		store.position = position;
-		store.options = options;
+		const previousPosition = defaultPosition;
+		const previousOptions = defaultOptions;
+		defaultPosition = position;
+		defaultOptions = options;
 
 		return () => {
-			if (store.position === position) store.position = previousPosition;
-			if (store.options === options) store.options = previousOptions;
+			if (defaultPosition === position) defaultPosition = previousPosition;
+			if (defaultOptions === options) defaultOptions = previousOptions;
 		};
 	}, [position, options]);
 
@@ -314,7 +306,7 @@ export function Toaster({
 		timersRef.current.clear();
 	}, []);
 
-	const schedule = useCallback((items: KineticItem[]) => {
+	const schedule = useCallback((items: readonly KineticItem[]) => {
 		if (hoverRef.current) return;
 
 		for (const item of items) {
@@ -333,14 +325,7 @@ export function Toaster({
 		}
 	}, []);
 
-	useEffect(() => {
-		const listener: KineticListener = (next) => setToasts(next);
-		store.listeners.add(listener);
-		return () => {
-			store.listeners.delete(listener);
-			clearAllTimers();
-		};
-	}, [clearAllTimers]);
+	useEffect(() => clearAllTimers, [clearAllTimers]);
 
 	useEffect(() => {
 		listRef.current = toasts;
