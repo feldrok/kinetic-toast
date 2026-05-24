@@ -21,7 +21,7 @@
 			}
 
 			main {
-				max-width: 900px;
+				max-width: 980px;
 				padding: 48px;
 			}
 
@@ -30,11 +30,29 @@
 				line-height: 1.6;
 			}
 
+			.panel {
+				display: grid;
+				gap: 18px;
+				margin: 32px 0;
+			}
+
+			.group {
+				display: grid;
+				gap: 10px;
+			}
+
+			.group-label {
+				color: #71717a;
+				font-size: 0.75rem;
+				font-weight: 700;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+			}
+
 			.controls {
 				display: flex;
 				flex-wrap: wrap;
 				gap: 12px;
-				margin: 32px 0;
 			}
 
 			button {
@@ -49,6 +67,12 @@
 
 			button:hover {
 				background: #27272a;
+			}
+
+			button[aria-pressed="true"] {
+				border-color: #93c5fd;
+				background: #172554;
+				color: #bfdbfe;
 			}
 
 			pre {
@@ -77,31 +101,133 @@
 	<body>
 		<div id="root"></div>
 		<script type="module">
-			import React from "react";
+			import React, { useCallback, useRef, useState } from "react";
 			import { createRoot } from "react-dom/client";
 			import { kinetic, Toaster } from "../dist/index.mjs";
 
+			const positions = [
+				"top-left",
+				"top-center",
+				"top-right",
+				"bottom-left",
+				"bottom-center",
+				"bottom-right",
+			];
 			const states = ["success", "error", "warning", "info", "action"];
+			const variants = [
+				"success",
+				"error",
+				"warning",
+				"info",
+				"action",
+				"icon",
+				"promise",
+			];
 
-			const burst = (count, options = {}) => {
+			const previewToastId = "kinetic-playground-preview";
+
+			const customIcon = React.createElement(
+				"span",
+				{ "aria-hidden": "true", style: { fontSize: "0.875rem" } },
+				"⌁",
+			);
+
+			const showVariant = (variant, position, options = {}) => {
+				const base = {
+					position,
+					duration: 6000,
+					...options,
+				};
+
+				switch (variant) {
+					case "success":
+						kinetic.success({
+							...base,
+							title: "Saved",
+							description: "Your changes have been saved successfully.",
+						});
+						break;
+					case "error":
+						kinetic.error({
+							...base,
+							title: "Upload Failed",
+							description: "Try again or check your connection.",
+						});
+						break;
+					case "warning":
+						kinetic.warning({
+							...base,
+							title: "Storage Almost Full",
+							description:
+								"You've used 95% of your available storage. Please upgrade your plan to continue.",
+						});
+						break;
+					case "info":
+						kinetic.info({
+							...base,
+							title: "New Version",
+							description: "A new version is ready to install.",
+						});
+						break;
+					case "action":
+						kinetic.action({
+							...base,
+							title: "File Uploaded",
+							description: "Your file has been uploaded. Share it with your team?",
+							button: { title: "Share Now", onClick: () => undefined },
+						});
+						break;
+					case "icon":
+						kinetic.info({
+							...base,
+							title: "Custom Icon",
+							description: "Use a custom React node for the toast icon.",
+							icon: customIcon,
+						});
+						break;
+					case "promise":
+						kinetic.promise(
+							new Promise((resolve) => setTimeout(() => resolve("complete"), 900)),
+							{
+								position,
+								loading: {
+									...base,
+									title: "Uploading",
+									duration: null,
+								},
+								success: {
+									...base,
+									title: "Upload Complete",
+									description: "Promise transition completed.",
+								},
+								error: { ...base, title: "Upload Failed" },
+							},
+						);
+						break;
+				}
+			};
+
+			const burst = (count, position, options = {}) => {
 				for (let i = 0; i < count; i += 1) {
 					const type = states[i % states.length];
 					kinetic.show({
 						title: `${type} #${i + 1}`,
 						description: "Stress toast for animation and stack profiling.",
 						type,
+						position,
 						duration: 3000 + (i % 5) * 400,
 						...options,
 					});
 				}
 			};
 
-			const promiseCycle = () => {
+			const promiseCycle = (position) => {
 				for (let i = 0; i < 12; i += 1) {
 					const delay = 500 + i * 100;
 					kinetic.promise(
 						new Promise((resolve) => setTimeout(() => resolve(i), delay)),
 						{
+							position,
 							loading: { title: `Loading ${i + 1}` },
 							success: (value) => ({
 								title: `Resolved ${Number(value) + 1}`,
@@ -114,11 +240,32 @@
 			};
 
 			function App() {
+				const [position, setPosition] = useState("top-right");
+				const [variant, setVariant] = useState("success");
+				const hasPreviewRef = useRef(false);
+
+				const showPreview = useCallback((nextVariant, nextPosition) => {
+					hasPreviewRef.current = true;
+					showVariant(nextVariant, nextPosition, { id: previewToastId });
+				}, []);
+
+				const updatePosition = useCallback((nextPosition) => {
+					setPosition(nextPosition);
+					if (hasPreviewRef.current) {
+						showPreview(variant, nextPosition);
+					}
+				}, [showPreview, variant]);
+
+				const updateVariant = useCallback((nextVariant) => {
+					setVariant(nextVariant);
+					showPreview(nextVariant, position);
+				}, [position, showPreview]);
+
 				return React.createElement(
 					React.Fragment,
 					null,
 					React.createElement(Toaster, {
-						position: "top-right",
+						position,
 						theme: "system",
 						closeButton: true,
 						navigation: true,
@@ -130,44 +277,96 @@
 						React.createElement(
 							"p",
 							null,
-							"Run after building the package. Use browser performance tooling to compare burst rendering, promise updates, navigation, and visual performance modes.",
+							"Pick a position and type to update one stable preview toast. Stress scenarios still create independent toasts so stack behavior remains testable.",
 						),
 						React.createElement(
 							"div",
-							{ className: "controls" },
+							{ className: "panel" },
 							React.createElement(
-								"button",
-								{ type: "button", onClick: () => burst(25) },
-								"Burst 25",
+								"section",
+								{ className: "group", "aria-label": "Toast position" },
+								React.createElement("div", { className: "group-label" }, "Position"),
+								React.createElement(
+									"div",
+									{ className: "controls" },
+									...positions.map((value) =>
+										React.createElement(
+											"button",
+											{
+												key: value,
+												type: "button",
+												"aria-pressed": position === value,
+												onClick: () => updatePosition(value),
+											},
+											value,
+										),
+									),
+								),
 							),
 							React.createElement(
-								"button",
-								{ type: "button", onClick: () => burst(75) },
-								"Burst 75",
+								"section",
+								{ className: "group", "aria-label": "Toast variants" },
+								React.createElement("div", { className: "group-label" }, "Types"),
+								React.createElement(
+									"div",
+									{ className: "controls" },
+									...variants.map((value) =>
+										React.createElement(
+											"button",
+											{
+												key: value,
+												type: "button",
+												"aria-pressed": variant === value,
+												onClick: () => updateVariant(value),
+											},
+											value[0].toUpperCase() + value.slice(1),
+										),
+									),
+								),
 							),
 							React.createElement(
-								"button",
-								{
-									type: "button",
-									onClick: () => burst(75, { performanceMode: "minimal" }),
-								},
-								"Burst 75 minimal",
-							),
-							React.createElement(
-								"button",
-								{ type: "button", onClick: promiseCycle },
-								"Promise cycle",
-							),
-							React.createElement(
-								"button",
-								{ type: "button", onClick: () => kinetic.clear() },
-								"Clear",
+								"section",
+								{ className: "group", "aria-label": "Stress scenarios" },
+								React.createElement("div", { className: "group-label" }, "Stress"),
+								React.createElement(
+									"div",
+									{ className: "controls" },
+									React.createElement(
+										"button",
+										{ type: "button", onClick: () => burst(25, position) },
+										"Burst 25",
+									),
+									React.createElement(
+										"button",
+										{ type: "button", onClick: () => burst(75, position) },
+										"Burst 75",
+									),
+									React.createElement(
+										"button",
+										{
+											type: "button",
+											onClick: () =>
+												burst(75, position, { performanceMode: "minimal" }),
+										},
+										"Burst 75 minimal",
+									),
+									React.createElement(
+										"button",
+										{ type: "button", onClick: () => promiseCycle(position) },
+										"Promise cycle",
+									),
+									React.createElement(
+										"button",
+										{ type: "button", onClick: () => kinetic.clear() },
+										"Clear",
+									),
+								),
 							),
 						),
 						React.createElement(
 							"pre",
 							null,
-							"bun run build\npython3 -m http.server 4173\nopen http://localhost:4173/benchmarks/react-stress.html",
+							"bun run benchmark\nopen http://localhost:4173/benchmarks/react-stress.html",
 						),
 					),
 				);
