@@ -49,7 +49,7 @@
 	],
 	"scripts": {
 		"build": "node scripts/build.mjs",
-		"dev": "bunchee --watch",
+		"dev": "node scripts/build.mjs --watch",
 		"prepack": "bun run build",
 		"registry:validate": "bunx --bun shadcn@latest registry validate",
 		"registry:build": "bunx --bun shadcn@latest build --output public/r",
