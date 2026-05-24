@@ -1,11 +1,28 @@
 {
-	"name": "sileo",
-	"version": "0.1.5",
-	"description": "An opinionated, physics based toast notification library for react.",
+	"name": "kinetic-toast",
+	"version": "0.1.0",
+	"description": "An opinionated, physics-based toast notification library for React.",
 	"license": "MIT",
+	"author": "Feldrok",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/hiaaryan/sileo.git"
+		"url": "git+https://github.com/feldrok/kinetic-toast.git"
+	},
+	"bugs": {
+		"url": "https://github.com/feldrok/kinetic-toast/issues"
+	},
+	"homepage": "https://github.com/feldrok/kinetic-toast#readme",
+	"keywords": [
+		"react",
+		"toast",
+		"notification",
+		"notifications",
+		"toaster",
+		"motion",
+		"kinetic"
+	],
+	"publishConfig": {
+		"access": "public"
 	},
 	"exports": {
 		".": {
@@ -22,13 +39,18 @@
 		"./styles.css": "./dist/styles.css"
 	},
 	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
 	"files": [
-		"dist"
+		"dist",
+		"README.md",
+		"LICENSE",
+		"NOTICE.md"
 	],
 	"scripts": {
 		"build": "rm -rf dist && bunchee && cp src/styles.css dist/styles.css",
-		"dev": "bunchee --watch"
+		"dev": "bunchee --watch",
+		"prepack": "bun run build"
 	},
 	"peerDependencies": {
 		"react": ">=18",

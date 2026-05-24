@@ -1,12 +1,11 @@
 "use client";
 
-import "./styles.css";
-
-export { sileo, Toaster } from "./toast";
+export { kinetic, Toaster } from "./toast";
 export type {
-	SileoButton,
-	SileoOptions,
-	SileoPosition,
-	SileoState,
-	SileoStyles,
+	KineticButton,
+	KineticOptions,
+	KineticPosition,
+	KineticState,
+	KineticStyles,
 } from "./types";
+export type { KineticPromiseOptions, KineticToasterProps } from "./toast";

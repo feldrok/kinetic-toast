@@ -33,22 +33,21 @@ import {
 	LoaderCircle,
 	X,
 } from "./icons";
-import "./styles.css";
-import type { SileoButton, SileoState, SileoStyles } from "./types";
+import type { KineticButton, KineticState, KineticStyles } from "./types";
 
-type State = SileoState;
+type State = KineticState;
 
 interface View {
 	title?: string;
 	description?: ReactNode | string;
 	state: State;
 	icon?: ReactNode | null;
-	styles?: SileoStyles;
-	button?: SileoButton;
+	styles?: KineticStyles;
+	button?: KineticButton;
 	fill: string;
 }
 
-interface SileoProps {
+interface KineticProps {
 	id: string;
 	fill?: string;
 	state?: State;
@@ -58,8 +57,8 @@ interface SileoProps {
 	expand?: "top" | "bottom";
 	className?: string;
 	icon?: ReactNode | null;
-	styles?: SileoStyles;
-	button?: SileoButton;
+	styles?: KineticStyles;
+	button?: KineticButton;
 	roundness?: number;
 	exiting?: boolean;
 	autoExpandDelayMs?: number;
@@ -80,7 +79,7 @@ interface SileoProps {
 
 const STATE_ICON: Record<State, ReactNode> = {
 	success: <Check />,
-	loading: <LoaderCircle data-sileo-icon="spin" aria-hidden="true" />,
+	loading: <LoaderCircle data-kinetic-icon="spin" aria-hidden="true" />,
 	error: <X />,
 	warning: <CircleAlert />,
 	info: <LifeBuoy />,
@@ -120,7 +119,7 @@ const GooeyDefs = memo(function GooeyDefs({
 
 /* ------------------------------- Component -------------------------------- */
 
-export const Sileo = memo(function Sileo({
+export const Kinetic = memo(function Kinetic({
 	id,
 	fill = "#FFFFFF",
 	state = "success",
@@ -146,7 +145,7 @@ export const Sileo = memo(function Sileo({
 	onMouseEnter,
 	onMouseLeave,
 	onDismiss,
-}: SileoProps) {
+}: KineticProps) {
 	const next: View = useMemo(
 		() => ({ title, description, state, icon, styles, button, fill }),
 		[title, description, state, icon, styles, button, fill],
@@ -166,7 +165,7 @@ export const Sileo = memo(function Sileo({
 		: (canExpand ?? (!interruptKey || interruptKey === id));
 
 	const headerKey = `${view.state}-${view.title}`;
-	const filterId = `sileo-gooey-${id}`;
+	const filterId = `kinetic-gooey-${id}`;
 	const resolvedRoundness = Math.max(0, roundness ?? DEFAULT_ROUNDNESS);
 	const blur = resolvedRoundness * BLUR_RATIO;
 
@@ -559,9 +558,9 @@ export const Sileo = memo(function Sileo({
 		(e: React.PointerEvent<HTMLButtonElement>) => {
 			if (exiting || !onDismiss) return;
 			const target = e.target as HTMLElement;
-			if (target.closest("[data-sileo-button]")) return;
-			if (target.closest("[data-sileo-close]")) return;
-			if (target.closest("[data-sileo-nav]")) return;
+			if (target.closest("[data-kinetic-button]")) return;
+			if (target.closest("[data-kinetic-close]")) return;
+			if (target.closest("[data-kinetic-nav]")) return;
 			pointerStartRef.current = e.clientY;
 			e.currentTarget.setPointerCapture(e.pointerId);
 			const el = buttonRef.current;
@@ -580,7 +579,7 @@ export const Sileo = memo(function Sileo({
 		<button
 			ref={buttonRef}
 			type="button"
-			data-sileo-toast
+			data-kinetic-toast
 			data-ready={ready}
 			data-expanded={open}
 			data-exiting={exiting}
@@ -594,12 +593,12 @@ export const Sileo = memo(function Sileo({
 			onTransitionEnd={handleTransitionEnd}
 			onPointerDown={handlePointerDown}
 		>
-			<div data-sileo-canvas data-edge={expand} style={canvasStyle}>
-				<svg data-sileo-svg width={WIDTH} height={svgHeight} viewBox={viewBox}>
-					<title>Sileo Notification</title>
+			<div data-kinetic-canvas data-edge={expand} style={canvasStyle}>
+				<svg data-kinetic-svg width={WIDTH} height={svgHeight} viewBox={viewBox}>
+					<title>Kinetic Notification</title>
 					<GooeyDefs filterId={filterId} blur={blur} />
 					<motion.rect
-						data-sileo-pill
+						data-kinetic-pill
 						rx={resolvedRoundness}
 						ry={resolvedRoundness}
 						fill={view.fill}
@@ -608,7 +607,7 @@ export const Sileo = memo(function Sileo({
 						transition={pillTransition}
 					/>
 					<motion.rect
-						data-sileo-body
+						data-kinetic-body
 						y={HEIGHT}
 						width={WIDTH}
 						rx={resolvedRoundness}
@@ -621,16 +620,16 @@ export const Sileo = memo(function Sileo({
 				</svg>
 			</div>
 
-			<div ref={headerRef} data-sileo-header data-edge={expand}>
-				<div data-sileo-header-stack>
+			<div ref={headerRef} data-kinetic-header data-edge={expand}>
+				<div data-kinetic-header-stack>
 					<div
 						ref={innerRef}
 						key={headerLayer.current.key}
-						data-sileo-header-inner
+						data-kinetic-header-inner
 						data-layer="current"
 					>
 						<div
-							data-sileo-badge
+							data-kinetic-badge
 							data-state={headerLayer.current.view.state}
 							className={headerLayer.current.view.styles?.badge}
 						>
@@ -638,7 +637,7 @@ export const Sileo = memo(function Sileo({
 								STATE_ICON[headerLayer.current.view.state]}
 						</div>
 						<span
-							data-sileo-title
+							data-kinetic-title
 							data-state={headerLayer.current.view.state}
 							className={headerLayer.current.view.styles?.title}
 						>
@@ -648,12 +647,12 @@ export const Sileo = memo(function Sileo({
 					{headerLayer.prev && (
 						<div
 							key={headerLayer.prev.key}
-							data-sileo-header-inner
+							data-kinetic-header-inner
 							data-layer="prev"
 							data-exiting="true"
 						>
 							<div
-								data-sileo-badge
+								data-kinetic-badge
 								data-state={headerLayer.prev.view.state}
 								className={headerLayer.prev.view.styles?.badge}
 							>
@@ -661,7 +660,7 @@ export const Sileo = memo(function Sileo({
 									STATE_ICON[headerLayer.prev.view.state]}
 							</div>
 							<span
-								data-sileo-title
+								data-kinetic-title
 								data-state={headerLayer.prev.view.state}
 								className={headerLayer.prev.view.styles?.title}
 							>
@@ -671,7 +670,7 @@ export const Sileo = memo(function Sileo({
 					)}
 				</div>
 				{showNav && (
-					<div data-sileo-nav>
+					<div data-kinetic-nav>
 						<div
 							role="button"
 							tabIndex={navIndex === 0 ? -1 : 0}
@@ -740,7 +739,7 @@ export const Sileo = memo(function Sileo({
 
 			{closeButton && onDismiss && (
 				<div
-					data-sileo-close
+					data-kinetic-close
 					role="button"
 					tabIndex={0}
 					aria-label="Close notification"
@@ -762,10 +761,10 @@ export const Sileo = memo(function Sileo({
 			)}
 
 			{hasDesc && (
-				<div data-sileo-content data-edge={expand} data-visible={open}>
+				<div data-kinetic-content data-edge={expand} data-visible={open}>
 					<div
 						ref={contentRef}
-						data-sileo-description
+						data-kinetic-description
 						className={view.styles?.description}
 					>
 						{view.description}
@@ -774,7 +773,7 @@ export const Sileo = memo(function Sileo({
 							<a
 								href="#"
 								type="button"
-								data-sileo-button
+								data-kinetic-button
 								data-state={view.state}
 								className={view.styles?.button}
 								onClick={handleButtonClick}

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type SileoState =
+export type KineticState =
 	| "success"
 	| "loading"
 	| "error"
@@ -8,19 +8,19 @@ export type SileoState =
 	| "info"
 	| "action";
 
-export interface SileoStyles {
+export interface KineticStyles {
 	title?: string;
 	description?: string;
 	badge?: string;
 	button?: string;
 }
 
-export interface SileoButton {
+export interface KineticButton {
 	title: string;
 	onClick: () => void;
 }
 
-export const SILEO_POSITIONS = [
+export const KINETIC_POSITIONS = [
 	"top-left",
 	"top-center",
 	"top-right",
@@ -29,18 +29,19 @@ export const SILEO_POSITIONS = [
 	"bottom-right",
 ] as const;
 
-export type SileoPosition = (typeof SILEO_POSITIONS)[number];
+export type KineticPosition = (typeof KINETIC_POSITIONS)[number];
 
-export interface SileoOptions {
+export interface KineticOptions {
+	id?: string;
 	title?: string;
 	description?: ReactNode | string;
-	type?: SileoState;
-	position?: SileoPosition;
+	type?: KineticState;
+	position?: KineticPosition;
 	duration?: number | null;
 	icon?: ReactNode | null;
-	styles?: SileoStyles;
+	styles?: KineticStyles;
 	fill?: string;
 	roundness?: number;
 	autopilot?: boolean | { expand?: number; collapse?: number };
-	button?: SileoButton;
+	button?: KineticButton;
 }

@@ -15,22 +15,21 @@ import {
 	DEFAULT_TOAST_DURATION,
 	EXIT_DURATION,
 } from "./constants";
-import { Sileo } from "./sileo";
-import type { SileoOptions, SileoPosition, SileoState } from "./types";
+import { Kinetic } from "./kinetic";
+import type { KineticOptions, KineticPosition, KineticState } from "./types";
 
-const pillAlign = (pos: SileoPosition) =>
+const pillAlign = (pos: KineticPosition) =>
 	pos.includes("right") ? "right" : pos.includes("center") ? "center" : "left";
-const expandDir = (pos: SileoPosition) =>
+const expandDir = (pos: KineticPosition) =>
 	pos.startsWith("top") ? ("bottom" as const) : ("top" as const);
 
 /* ---------------------------------- Types --------------------------------- */
 
-interface InternalSileoOptions extends SileoOptions {
-	id?: string;
-	state?: SileoState;
+interface InternalKineticOptions extends KineticOptions {
+	state?: KineticState;
 }
 
-interface SileoItem extends InternalSileoOptions {
+interface KineticItem extends InternalKineticOptions {
 	id: string;
 	instanceId: string;
 	exiting?: boolean;
@@ -38,16 +37,16 @@ interface SileoItem extends InternalSileoOptions {
 	autoCollapseDelayMs?: number;
 }
 
-type SileoOffsetValue = number | string;
-type SileoOffsetConfig = Partial<
-	Record<"top" | "right" | "bottom" | "left", SileoOffsetValue>
+type KineticOffsetValue = number | string;
+type KineticOffsetConfig = Partial<
+	Record<"top" | "right" | "bottom" | "left", KineticOffsetValue>
 >;
 
-export interface SileoToasterProps {
+export interface KineticToasterProps {
 	children?: ReactNode;
-	position?: SileoPosition;
-	offset?: SileoOffsetValue | SileoOffsetConfig;
-	options?: Partial<SileoOptions>;
+	position?: KineticPosition;
+	offset?: KineticOffsetValue | KineticOffsetConfig;
+	options?: Partial<KineticOptions>;
 	theme?: "light" | "dark" | "system";
 	closeButton?: boolean;
 	navigation?: boolean;
@@ -55,19 +54,19 @@ export interface SileoToasterProps {
 
 /* ------------------------------ Global State ------------------------------ */
 
-type SileoListener = (toasts: SileoItem[]) => void;
+type KineticListener = (toasts: KineticItem[]) => void;
 
 const store = {
-	toasts: [] as SileoItem[],
-	listeners: new Set<SileoListener>(),
-	position: "top-right" as SileoPosition,
-	options: undefined as Partial<SileoOptions> | undefined,
+	toasts: [] as KineticItem[],
+	listeners: new Set<KineticListener>(),
+	position: "top-right" as KineticPosition,
+	options: undefined as Partial<KineticOptions> | undefined,
 
 	emit() {
 		for (const fn of this.listeners) fn(this.toasts);
 	},
 
-	update(fn: (prev: SileoItem[]) => SileoItem[]) {
+	update(fn: (prev: KineticItem[]) => KineticItem[]) {
 		this.toasts = fn(this.toasts);
 		this.emit();
 	},
@@ -77,7 +76,7 @@ let idCounter = 0;
 const generateId = () =>
 	`${++idCounter}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-const timeoutKey = (t: SileoItem) => `${t.id}:${t.instanceId}`;
+const timeoutKey = (t: KineticItem) => `${t.id}:${t.instanceId}`;
 
 /* ------------------------------- Toast API -------------------------------- */
 
@@ -108,7 +107,7 @@ const dismissToast = (id: string, instanceId?: string) => {
 };
 
 const resolveAutopilot = (
-	opts: InternalSileoOptions,
+	opts: InternalKineticOptions,
 	duration: number | null,
 ): { expandDelayMs?: number; collapseDelayMs?: number } => {
 	if (opts.autopilot === false || !duration || duration <= 0) return {};
@@ -120,17 +119,17 @@ const resolveAutopilot = (
 	};
 };
 
-const mergeOptions = (options: InternalSileoOptions) => ({
+const mergeOptions = (options: InternalKineticOptions) => ({
 	...store.options,
 	...options,
 	styles: { ...store.options?.styles, ...options.styles },
 });
 
-const buildSileoItem = (
-	merged: InternalSileoOptions,
+const buildKineticItem = (
+	merged: InternalKineticOptions,
 	id: string,
-	fallbackPosition?: SileoPosition,
-): SileoItem => {
+	fallbackPosition?: KineticPosition,
+): KineticItem => {
 	const duration = merged.duration ?? DEFAULT_TOAST_DURATION;
 	const auto = resolveAutopilot(merged, duration);
 	return {
@@ -143,13 +142,13 @@ const buildSileoItem = (
 	};
 };
 
-const createToast = (options: InternalSileoOptions) => {
+const createToast = (options: InternalKineticOptions) => {
 	const live = store.toasts.filter((t) => !t.exiting);
 	const merged = mergeOptions(options);
 
 	const id = merged.id ?? generateId();
 	const prev = live.find((t) => t.id === id);
-	const item = buildSileoItem(merged, id, prev?.position);
+	const item = buildKineticItem(merged, id, prev?.position);
 
 	if (prev) {
 		store.update((p) => p.map((t) => (t.id === id ? item : t)));
@@ -159,35 +158,35 @@ const createToast = (options: InternalSileoOptions) => {
 	return { id, duration: merged.duration ?? DEFAULT_TOAST_DURATION };
 };
 
-const updateToast = (id: string, options: InternalSileoOptions) => {
+const updateToast = (id: string, options: InternalKineticOptions) => {
 	const existing = store.toasts.find((t) => t.id === id);
 	if (!existing) return;
 
-	const item = buildSileoItem(mergeOptions(options), id, existing.position);
+	const item = buildKineticItem(mergeOptions(options), id, existing.position);
 	store.update((prev) => prev.map((t) => (t.id === id ? item : t)));
 };
 
-export interface SileoPromiseOptions<T = unknown> {
-	loading: SileoOptions;
-	success: SileoOptions | ((data: T) => SileoOptions);
-	error: SileoOptions | ((err: unknown) => SileoOptions);
-	action?: SileoOptions | ((data: T) => SileoOptions);
-	position?: SileoPosition;
+export interface KineticPromiseOptions<T = unknown> {
+	loading: KineticOptions;
+	success: KineticOptions | ((data: T) => KineticOptions);
+	error: KineticOptions | ((err: unknown) => KineticOptions);
+	action?: KineticOptions | ((data: T) => KineticOptions);
+	position?: KineticPosition;
 }
 
-export const sileo = {
-	show: (opts: SileoOptions) => createToast({ ...opts, state: opts.type }).id,
-	success: (opts: SileoOptions) =>
+export const kinetic = {
+	show: (opts: KineticOptions) => createToast({ ...opts, state: opts.type }).id,
+	success: (opts: KineticOptions) =>
 		createToast({ ...opts, state: "success" }).id,
-	error: (opts: SileoOptions) => createToast({ ...opts, state: "error" }).id,
-	warning: (opts: SileoOptions) =>
+	error: (opts: KineticOptions) => createToast({ ...opts, state: "error" }).id,
+	warning: (opts: KineticOptions) =>
 		createToast({ ...opts, state: "warning" }).id,
-	info: (opts: SileoOptions) => createToast({ ...opts, state: "info" }).id,
-	action: (opts: SileoOptions) => createToast({ ...opts, state: "action" }).id,
+	info: (opts: KineticOptions) => createToast({ ...opts, state: "info" }).id,
+	action: (opts: KineticOptions) => createToast({ ...opts, state: "action" }).id,
 
 	promise: <T,>(
 		promise: Promise<T> | (() => Promise<T>),
-		opts: SileoPromiseOptions<T>,
+		opts: KineticPromiseOptions<T>,
 	): Promise<T> => {
 		const { id } = createToast({
 			...opts.loading,
@@ -221,7 +220,7 @@ export const sileo = {
 
 	dismiss: dismissToast,
 
-	clear: (position?: SileoPosition) =>
+	clear: (position?: KineticPosition) =>
 		store.update((prev) =>
 			position ? prev.filter((t) => t.position !== position) : [],
 		),
@@ -269,13 +268,13 @@ export function Toaster({
 	theme,
 	closeButton = false,
 	navigation = false,
-}: SileoToasterProps) {
+}: KineticToasterProps) {
 	const resolvedTheme = useResolvedTheme(theme);
-	const [toasts, setToasts] = useState<SileoItem[]>(store.toasts);
+	const [toasts, setToasts] = useState<KineticItem[]>(store.toasts);
 	const [activeId, setActiveId] = useState<string>();
 	const [mounted, setMounted] = useState(false);
 	const [selectedIds, setSelectedIds] = useState<
-		Partial<Record<SileoPosition, string>>
+		Partial<Record<KineticPosition, string>>
 	>({});
 
 	const hoverRef = useRef(false);
@@ -308,7 +307,7 @@ export function Toaster({
 		timersRef.current.clear();
 	}, []);
 
-	const schedule = useCallback((items: SileoItem[]) => {
+	const schedule = useCallback((items: KineticItem[]) => {
 		if (hoverRef.current) return;
 
 		for (const item of items) {
@@ -328,7 +327,7 @@ export function Toaster({
 	}, []);
 
 	useEffect(() => {
-		const listener: SileoListener = (next) => setToasts(next);
+		const listener: KineticListener = (next) => setToasts(next);
 		store.listeners.add(listener);
 		return () => {
 			store.listeners.delete(listener);
@@ -424,7 +423,7 @@ export function Toaster({
 	}, []);
 
 	const getViewportStyle = useCallback(
-		(pos: SileoPosition): CSSProperties | undefined => {
+		(pos: KineticPosition): CSSProperties | undefined => {
 			if (offset === undefined) return undefined;
 
 			const o =
@@ -433,7 +432,7 @@ export function Toaster({
 					: { top: offset, right: offset, bottom: offset, left: offset };
 
 			const s: CSSProperties = {};
-			const px = (v: SileoOffsetValue) =>
+			const px = (v: KineticOffsetValue) =>
 				typeof v === "number" ? `${v}px` : v;
 
 			if (pos.startsWith("top") && o.top) s.top = px(o.top);
@@ -447,7 +446,7 @@ export function Toaster({
 	);
 
 	const activePositions = useMemo(() => {
-		const map = new Map<SileoPosition, SileoItem[]>();
+		const map = new Map<KineticPosition, KineticItem[]>();
 		for (const t of toasts) {
 			const pos = t.position ?? position;
 			const arr = map.get(pos);
@@ -461,7 +460,7 @@ export function Toaster({
 	}, [toasts, position]);
 
 	const navigate = useCallback(
-		(pos: SileoPosition, dir: -1 | 1) => {
+		(pos: KineticPosition, dir: -1 | 1) => {
 			const items = activePositions.get(pos) ?? [];
 			const live = items.filter((t) => !t.exiting);
 			setSelectedIds((prev) => {
@@ -496,7 +495,7 @@ export function Toaster({
 		return (
 			<section
 				key={pos}
-				data-sileo-viewport
+				data-kinetic-viewport
 				data-position={pos}
 				data-theme={theme ? resolvedTheme : undefined}
 				aria-live="polite"
@@ -507,7 +506,7 @@ export function Toaster({
 					if (navigation && !isSelected && !item.exiting) return null;
 					const h = getHandlers(item.id);
 					return (
-						<Sileo
+						<Kinetic
 							key={item.id}
 							id={item.id}
 							state={item.state}
