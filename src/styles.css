@@ -50,28 +50,46 @@
 
 	/*
 	 * Theming surface.
-	 * Overridden by:
-	 *   1. .dark class on an ancestor (built-in light/dark inversion)
-	 *   2. [data-kinetic-viewport][data-theme="..."] when the Toaster `theme` prop is set
-	 *   3. Inline style on the viewport (shadcn wrapper maps these to popover tokens)
+	 *
+	 * Public vars `--kinetic-toast-*` are what consumers and wrappers
+	 * override. They default to private `--_kinetic-toast-*-default` so
+	 * external wrappers can use
+	 *   `var(--popover, var(--_kinetic-toast-fill-default))`
+	 * and have the kinetic light/dark cascade still take over when the host
+	 * token is undefined. Without the explicit fallback, an unresolved
+	 * `var(--popover)` makes the consuming property invalid-at-computed-
+	 * value-time (e.g. `fill: black`) instead of inheriting the cascade.
+	 *
+	 * Overridden by, in increasing precedence:
+	 *   1. `.dark` ancestor (built-in light/dark inversion)
+	 *   2. `[data-kinetic-viewport][data-theme]` when the Toaster `theme` prop is set
+	 *   3. Inline style on the viewport (e.g. shadcn wrapper mapping to popover tokens)
 	 */
-	--kinetic-fill: #1a1a1a;
-	--kinetic-fg-muted: rgba(255, 255, 255, 0.5);
+	--_kinetic-toast-fill-default: #1a1a1a;
+	--_kinetic-toast-fg-default: rgba(255, 255, 255, 0.95);
+	--_kinetic-toast-fg-muted-default: rgba(255, 255, 255, 0.5);
+
+	--kinetic-toast-fill: var(--_kinetic-toast-fill-default);
+	--kinetic-toast-fg: var(--_kinetic-toast-fg-default);
+	--kinetic-toast-fg-muted: var(--_kinetic-toast-fg-muted-default);
 }
 
 .dark {
-	--kinetic-fill: #f2f2f2;
-	--kinetic-fg-muted: rgba(0, 0, 0, 0.5);
-}
-
-[data-kinetic-viewport][data-theme="light"] {
-	--kinetic-fill: #1a1a1a;
-	--kinetic-fg-muted: rgba(255, 255, 255, 0.5);
+	--_kinetic-toast-fill-default: #f2f2f2;
+	--_kinetic-toast-fg-default: rgba(0, 0, 0, 0.95);
+	--_kinetic-toast-fg-muted-default: rgba(0, 0, 0, 0.5);
 }
 
 [data-kinetic-viewport][data-theme="dark"] {
-	--kinetic-fill: #f2f2f2;
-	--kinetic-fg-muted: rgba(0, 0, 0, 0.5);
+	--_kinetic-toast-fill-default: #f2f2f2;
+	--_kinetic-toast-fg-default: rgba(0, 0, 0, 0.95);
+	--_kinetic-toast-fg-muted-default: rgba(0, 0, 0, 0.5);
+}
+
+[data-kinetic-viewport][data-theme="light"] {
+	--_kinetic-toast-fill-default: #1a1a1a;
+	--_kinetic-toast-fg-default: rgba(255, 255, 255, 0.95);
+	--_kinetic-toast-fg-muted-default: rgba(255, 255, 255, 0.5);
 }
 
 /* ---------------------------------- Toast --------------------------------- */
@@ -84,6 +102,7 @@
 	border: 0;
 	background: transparent;
 	padding: 0;
+	color: var(--kinetic-toast-fg);
 	width: var(--kinetic-width);
 	height: var(--_h, var(--kinetic-height));
 	opacity: 0;
@@ -162,7 +181,7 @@
 
 [data-kinetic-pill],
 [data-kinetic-body] {
-	fill: var(--kinetic-fill);
+	fill: var(--kinetic-toast-fill);
 }
 
 /* --------------------------------- Shapes --------------------------------- */
@@ -371,7 +390,7 @@
 	padding: 1rem;
 	font-size: 0.875rem;
 	line-height: 1.25rem;
-	color: var(--kinetic-fg-muted);
+	color: var(--kinetic-toast-fg-muted);
 	contain: layout style paint;
 	content-visibility: auto;
 }
@@ -521,7 +540,7 @@
 }
 
 [data-kinetic-nav] button:not(:disabled):hover {
-	background-color: rgba(255, 255, 255, 0.12);
+	background-color: color-mix(in oklab, currentColor 12%, transparent);
 }
 
 [data-kinetic-nav] button:disabled {

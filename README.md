@@ -271,16 +271,29 @@ You can customize defaults globally:
 
 ### Theming
 
-Kinetic Toast follows the host app theme via two CSS variables: `--kinetic-fill` (the SVG surface color) and `--kinetic-fg-muted` (description text). Defaults invert when a `.dark` ancestor is present, so any theme manager that toggles `.dark` on `<html>` (next-themes, Tailwind's class mode, your own state) will flip the toast surface automatically. Override at any level:
+Kinetic Toast follows the host app theme via three CSS variables:
+
+- `--kinetic-toast-fill` — the SVG surface color
+- `--kinetic-toast-fg` — primary text and icon color (used by the toast root via `currentColor`, so the close button and nav chevrons follow)
+- `--kinetic-toast-fg-muted` — description text
+
+Defaults invert when a `.dark` ancestor is present, so any theme manager that toggles `.dark` on `<html>` (next-themes, Tailwind's class mode, your own state) will flip the toast surface automatically. Override at any level:
 
 ```css
 :root {
-  --kinetic-fill: hsl(var(--popover));
-  --kinetic-fg-muted: color-mix(in oklab, hsl(var(--popover-foreground)) 60%, transparent);
+  --kinetic-toast-fill: hsl(var(--popover));
+  --kinetic-toast-fg: hsl(var(--popover-foreground));
+  --kinetic-toast-fg-muted: color-mix(
+    in oklab,
+    hsl(var(--popover-foreground)) 60%,
+    transparent
+  );
 }
 ```
 
-The shadcn registry wrapper already does this mapping for you. If you want to force a single theme regardless of the host, pass `theme="light" | "dark" | "system"` to `<Toaster />`.
+The shadcn registry wrapper already does this mapping for you. If you want to force a single theme regardless of the host, pass `theme="light" | "dark" | "system"` to `<Toaster />` — the wrapper detects an explicit `theme` and steps out of the way so the prop wins.
+
+**Portal constraint:** the toast renders into `document.body`, so theme tokens must be reachable from `html` or `body`. A `.dark` class scoped to a single section deeper in the page won't reach the toast — set theme tokens at the document level.
 
 You can also pass class names per toast:
 
