@@ -408,7 +408,13 @@ export const Kinetic = memo(function Kinetic({
 	const expanded = open ? rawExpanded : frozenExpandedRef.current;
 	const svgHeight = hasDesc ? Math.max(expanded, minExpanded) : HEIGHT;
 	const expandedContent = Math.max(0, expanded - HEIGHT);
-	const navExtra = showNav ? 50 : 0;
+	// 50 reserves room for the two nav chevrons + gap. When the close
+	// button is also rendered, the nav cluster is shifted left via the CSS
+	// `:has([data-kinetic-close])` rule by `var(--kinetic-height) - 0.5rem`
+	// (32px when HEIGHT=40); add HEIGHT here so the pill grows enough that
+	// the auto-margin can still resolve to a non-zero value instead of
+	// overflowing into the close button.
+	const navExtra = showNav ? (closeButton ? 50 + HEIGHT : 50) : 0;
 	const resolvedPillWidth = Math.max(pillWidth || HEIGHT, HEIGHT) + navExtra;
 	const pillHeight = HEIGHT + blur * 3;
 
