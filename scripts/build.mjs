@@ -1,5 +1,13 @@
-import { copyFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import {
+	copyFileSync,
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	watch,
+	writeFileSync,
+} from "node:fs";
+import { dirname } from "node:path";
+import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const packagePath = new URL("../package.json", import.meta.url);
@@ -15,19 +23,14 @@ const buncheeBin = fileURLToPath(
 	),
 );
 const originalPackageJson = readFileSync(packagePath, "utf8");
+const isWatchMode = process.argv.includes("--watch");
 
-const run = (command, args) => {
-	const result = spawnSync(command, args, { stdio: "inherit" });
-
-	if (result.status !== 0) {
-		process.exitCode = result.status ?? 1;
-		throw new Error(`${command} ${args.join(" ")} failed`);
-	}
+const copyStyles = () => {
+	mkdirSync(dirname(fileURLToPath(distCssPath)), { recursive: true });
+	copyFileSync(sourceCssPath, distCssPath);
 };
 
-try {
-	rmSync(distPath, { recursive: true, force: true });
-
+const writeBundlerPackageJson = () => {
 	// Bunchee discovers JavaScript/TypeScript source entries from package exports.
 	// The stylesheet export is a copied asset, so hide it while bundling and
 	// restore package.json before copying the CSS into dist.
@@ -39,9 +42,63 @@ try {
 	}
 
 	writeFileSync(packagePath, `${JSON.stringify(packageJson, null, "\t")}\n`);
-	run(buncheeBin, []);
-} finally {
-	writeFileSync(packagePath, originalPackageJson);
-}
+};
 
-copyFileSync(sourceCssPath, distCssPath);
+const restorePackageJson = () => {
+	writeFileSync(packagePath, originalPackageJson);
+};
+
+const run = (command, args) => {
+	const result = spawnSync(command, args, { stdio: "inherit" });
+
+	if (result.status !== 0) {
+		process.exitCode = result.status ?? 1;
+		throw new Error(`${command} ${args.join(" ")} failed`);
+	}
+};
+
+const runWatch = () => {
+	rmSync(distPath, { recursive: true, force: true });
+	writeBundlerPackageJson();
+
+	const child = spawn(buncheeBin, ["--watch"], { stdio: "inherit" });
+	const cssWatcher = watch(sourceCssPath, copyStyles);
+
+	copyStyles();
+
+	const cleanup = () => {
+		cssWatcher.close();
+		restorePackageJson();
+	};
+
+	child.on("exit", (code, signal) => {
+		cleanup();
+
+		if (signal) {
+			process.kill(process.pid, signal);
+			return;
+		}
+
+		process.exit(code ?? 0);
+	});
+
+	for (const signal of ["SIGINT", "SIGTERM"]) {
+		process.once(signal, () => {
+			child.kill(signal);
+		});
+	}
+};
+
+if (isWatchMode) {
+	runWatch();
+} else {
+	try {
+		rmSync(distPath, { recursive: true, force: true });
+		writeBundlerPackageJson();
+		run(buncheeBin, []);
+	} finally {
+		restorePackageJson();
+	}
+
+	copyStyles();
+}
