@@ -284,7 +284,7 @@ This repo includes `skills/kinetic-toast/SKILL.md`, a concise setup guide an age
 
 ### Architecture notes
 
-See [`docs/framework-agnostic-core.md`](docs/framework-agnostic-core.md) for the proposed long-term split between a framework-neutral toast runtime and React, Vue, vanilla, or other framework adapters.
+See [`docs/framework-agnostic-core.md`](docs/framework-agnostic-core.md) for the proposed long-term split between a framework-neutral toast runtime and React, Vue, vanilla, or other framework adapters. See [`docs/react-adapter-performance.md`](docs/react-adapter-performance.md) for the React adapter memoization and React Compiler policy.
 
 ## License
 
