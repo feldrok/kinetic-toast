@@ -18,6 +18,7 @@ import {
 } from "./constants";
 import { createKineticStore } from "./core-store";
 import { Kinetic } from "./kinetic";
+import { getSystemThemeSnapshot, subscribeSystemTheme } from "./system-theme";
 import type { KineticOptions, KineticPosition, KineticState } from "./types";
 
 const pillAlign = (pos: KineticPosition) =>
@@ -298,28 +299,13 @@ const THEME_FILLS = {
 function useResolvedTheme(
 	theme: "light" | "dark" | "system" | undefined,
 ): "light" | "dark" {
-	const [resolved, setResolved] = useState<"light" | "dark">(() => {
-		if (theme === "light" || theme === "dark") return theme;
-		if (typeof window === "undefined") return "light";
-		return window.matchMedia("(prefers-color-scheme: dark)").matches
-			? "dark"
-			: "light";
-	});
+	const systemTheme = useSyncExternalStore(
+		subscribeSystemTheme,
+		getSystemThemeSnapshot,
+		() => "light" as const,
+	);
 
-	useEffect(() => {
-		if (theme === "light" || theme === "dark") {
-			setResolved(theme);
-			return;
-		}
-		const mq = window.matchMedia("(prefers-color-scheme: dark)");
-		const handler = (e: MediaQueryListEvent) =>
-			setResolved(e.matches ? "dark" : "light");
-		setResolved(mq.matches ? "dark" : "light");
-		mq.addEventListener("change", handler);
-		return () => mq.removeEventListener("change", handler);
-	}, [theme]);
-
-	return resolved;
+	return theme === "light" || theme === "dark" ? theme : systemTheme;
 }
 
 export function Toaster({
