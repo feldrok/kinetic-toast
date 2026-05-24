@@ -52,6 +52,80 @@ export interface KineticToasterProps {
 	navigation?: boolean;
 }
 
+interface KineticViewportModel {
+	position: KineticPosition;
+	pill: "left" | "center" | "right";
+	expand: "top" | "bottom";
+	items: KineticItem[];
+	live: KineticItem[];
+	selectedId?: string;
+	showNav: boolean;
+	selectedIndex: number;
+}
+
+const groupToastsByPosition = (
+	toasts: readonly KineticItem[],
+	fallbackPosition: KineticPosition,
+) => {
+	const map = new Map<KineticPosition, KineticItem[]>();
+	for (const toast of toasts) {
+		const pos = toast.position ?? fallbackPosition;
+		const items = map.get(pos);
+		if (items) {
+			items.push(toast);
+		} else {
+			map.set(pos, [toast]);
+		}
+	}
+	return map;
+};
+
+const getSelectedToastId = (
+	items: readonly KineticItem[],
+	live: readonly KineticItem[],
+	selectedId?: string,
+) => {
+	if (selectedId && items.some((toast) => toast.id === selectedId)) {
+		return selectedId;
+	}
+	return (live[live.length - 1] ?? items[items.length - 1])?.id;
+};
+
+const deriveViewportModels = ({
+	toasts,
+	fallbackPosition,
+	selectedIds,
+	navigation,
+}: {
+	toasts: readonly KineticItem[];
+	fallbackPosition: KineticPosition;
+	selectedIds: Partial<Record<KineticPosition, string>>;
+	navigation: boolean;
+}): KineticViewportModel[] => {
+	const grouped = groupToastsByPosition(toasts, fallbackPosition);
+	const models: KineticViewportModel[] = [];
+
+	for (const [pos, items] of grouped) {
+		const live = items.filter((toast) => !toast.exiting);
+		const selectedId = getSelectedToastId(items, live, selectedIds[pos]);
+		const displayItem = items.find((toast) => toast.id === selectedId);
+		const showNav = navigation && live.length > 1 && !displayItem?.exiting;
+
+		models.push({
+			position: pos,
+			pill: pillAlign(pos),
+			expand: expandDir(pos),
+			items,
+			live,
+			selectedId,
+			showNav,
+			selectedIndex: live.findIndex((toast) => toast.id === selectedId),
+		});
+	}
+
+	return models;
+};
+
 /* ------------------------------ Global State ------------------------------ */
 
 type KineticListener = (toasts: KineticItem[]) => void;
@@ -452,64 +526,48 @@ export function Toaster({
 		[offset],
 	);
 
-	const activePositions = useMemo(() => {
-		const map = new Map<KineticPosition, KineticItem[]>();
-		for (const t of toasts) {
-			const pos = t.position ?? position;
-			const arr = map.get(pos);
-			if (arr) {
-				arr.push(t);
-			} else {
-				map.set(pos, [t]);
-			}
-		}
-		return map;
-	}, [toasts, position]);
+	const viewportModels = deriveViewportModels({
+		toasts,
+		fallbackPosition: position,
+		selectedIds,
+		navigation,
+	});
 
 	const navigate = useCallback(
 		(pos: KineticPosition, dir: -1 | 1) => {
-			const items = activePositions.get(pos) ?? [];
-			const live = items.filter((t) => !t.exiting);
+			const items =
+				groupToastsByPosition(listRef.current, position).get(pos) ?? [];
+			const live = items.filter((toast) => !toast.exiting);
 			setSelectedIds((prev) => {
-				const rawSel = prev[pos];
-				const curId =
-					rawSel && live.find((t) => t.id === rawSel)
-						? rawSel
+				const currentId =
+					prev[pos] && live.some((toast) => toast.id === prev[pos])
+						? prev[pos]
 						: live[live.length - 1]?.id;
-				const curIdx = live.findIndex((t) => t.id === curId);
-				const nextIdx = Math.max(0, Math.min(live.length - 1, curIdx + dir));
-				const nextId = live[nextIdx]?.id;
+				const currentIndex = live.findIndex((toast) => toast.id === currentId);
+				const nextIndex = Math.max(
+					0,
+					Math.min(live.length - 1, currentIndex + dir),
+				);
+				const nextId = live[nextIndex]?.id;
 				if (!nextId || nextId === prev[pos]) return prev;
 				return { ...prev, [pos]: nextId };
 			});
 		},
-		[activePositions],
+		[position],
 	);
 
-	const viewports = Array.from(activePositions, ([pos, items]) => {
-		const pill = pillAlign(pos);
-		const expand = expandDir(pos);
-		const live = items.filter((t) => !t.exiting);
-		const rawSel = selectedIds[pos];
-		const selId =
-			rawSel && items.find((t) => t.id === rawSel)
-				? rawSel
-				: (live[live.length - 1] ?? items[items.length - 1])?.id;
-		const displayItem = items.find((t) => t.id === selId);
-		const showNav = navigation && live.length > 1 && !displayItem?.exiting;
-		const selIdx = live.findIndex((t) => t.id === selId);
-
+	const viewports = viewportModels.map((model) => {
 		return (
 			<section
-				key={pos}
+				key={model.position}
 				data-kinetic-viewport
-				data-position={pos}
+				data-position={model.position}
 				data-theme={theme ? resolvedTheme : undefined}
 				aria-live="polite"
-				style={getViewportStyle(pos)}
+				style={getViewportStyle(model.position)}
 			>
-				{items.map((item) => {
-					const isSelected = item.id === selId;
+				{model.items.map((item) => {
+					const isSelected = item.id === model.selectedId;
 					if (navigation && !isSelected && !item.exiting) return null;
 					const h = getHandlers(item.id);
 					return (
@@ -519,8 +577,8 @@ export function Toaster({
 							state={item.state}
 							title={item.title}
 							description={item.description}
-							position={pill}
-							expand={expand}
+							position={model.pill}
+							expand={model.expand}
 							icon={item.icon}
 							fill={item.fill ?? (theme ? THEME_FILLS[resolvedTheme] : undefined)}
 							styles={item.styles}
@@ -532,9 +590,15 @@ export function Toaster({
 							refreshKey={item.instanceId}
 							canExpand={activeId === undefined || activeId === item.id}
 							closeButton={closeButton}
-							navIndex={showNav && isSelected ? selIdx : undefined}
-							navTotal={showNav && isSelected ? live.length : undefined}
-							onNavigate={(dir) => navigate(pos, dir)}
+							navIndex={
+								model.showNav && isSelected
+									? model.selectedIndex
+									: undefined
+							}
+							navTotal={
+								model.showNav && isSelected ? model.live.length : undefined
+							}
+							onNavigate={(dir) => navigate(model.position, dir)}
 							onMouseEnter={h.enter}
 							onMouseLeave={h.leave}
 							onDismiss={h.dismiss}
