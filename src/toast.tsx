@@ -569,6 +569,8 @@ export function Toaster({
 							styles={item.styles}
 							button={item.button}
 							roundness={item.roundness}
+							performanceMode={item.performanceMode}
+							effects={item.effects}
 							exiting={item.exiting}
 							autoExpandDelayMs={item.autoExpandDelayMs}
 							autoCollapseDelayMs={item.autoCollapseDelayMs}

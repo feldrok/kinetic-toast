@@ -22,6 +22,13 @@ export interface KineticAutopilotOptions {
 	collapse?: number;
 }
 
+export type KineticPerformanceMode = "quality" | "minimal";
+
+export interface KineticEffects {
+	gooey?: boolean;
+	blur?: boolean;
+}
+
 export interface CoreKineticOptions {
 	id?: string;
 	title?: string;
@@ -31,4 +38,6 @@ export interface CoreKineticOptions {
 	fill?: string;
 	roundness?: number;
 	autopilot?: boolean | KineticAutopilotOptions;
+	performanceMode?: KineticPerformanceMode;
+	effects?: KineticEffects;
 }

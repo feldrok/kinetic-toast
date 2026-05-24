@@ -219,6 +219,11 @@ type KineticOptions = {
   fill?: string;
   roundness?: number;
   autopilot?: boolean | { expand?: number; collapse?: number };
+  performanceMode?: "quality" | "minimal";
+  effects?: {
+    gooey?: boolean;
+    blur?: boolean;
+  };
   button?: {
     title: string;
     onClick: () => void;
@@ -230,6 +235,22 @@ type KineticOptions = {
     button?: string;
   };
 };
+```
+
+### Visual performance controls
+
+Use `performanceMode: "minimal"` to disable the SVG gooey filter and header blur for a toast. Use `effects` for finer control:
+
+```tsx
+kinetic.info({
+  title: "Lightweight",
+  performanceMode: "minimal",
+});
+
+kinetic.success({
+  title: "No blur",
+  effects: { blur: false },
+});
 ```
 
 ## Styling

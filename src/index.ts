@@ -5,6 +5,8 @@ export type {
 	CoreKineticOptions,
 	KineticAutopilotOptions,
 	KineticButton,
+	KineticEffects,
+	KineticPerformanceMode,
 	KineticOptions,
 	KineticPosition,
 	KineticState,
