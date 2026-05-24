@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import {
 	AUTO_COLLAPSE_DELAY,
 	AUTO_EXPAND_DELAY,
+	DEFAULT_MAX_AGE,
 	DEFAULT_TOAST_DURATION,
 	EXIT_DURATION,
 } from "./constants";
@@ -35,6 +36,12 @@ interface KineticItem extends InternalKineticOptions {
 	exiting?: boolean;
 	autoExpandDelayMs?: number;
 	autoCollapseDelayMs?: number;
+	/**
+	 * Wall-clock timestamp when this toast (or its current instance, after a
+	 * `kinetic.success({ id })` style update) was placed in the store. Used
+	 * by the Toaster to enforce `maxAge` independently of hover-pause.
+	 */
+	createdAt: number;
 }
 
 type KineticOffsetValue = number | string;
@@ -51,9 +58,18 @@ export interface KineticToasterProps {
 	closeButton?: boolean;
 	navigation?: boolean;
 	/**
+	 * Default wall-clock cap on how long any toast in this Toaster stays in
+	 * the navigation history. Defaults to 60s. Independent of `duration`
+	 * and ignores hover-pause so old toasts age out even while you're
+	 * navigating with `<` `>`. Per-toast `maxAge` overrides this; pass
+	 * `null` to disable globally.
+	 */
+	maxAge?: number | null;
+	/**
 	 * Inline style applied to every viewport. The shadcn wrapper uses this to
 	 * map host theme tokens (e.g. `--popover`) to the kinetic CSS variables
-	 * (`--kinetic-fill`, `--kinetic-fg-muted`) so toasts inherit the app theme.
+	 * (`--kinetic-toast-fill`, `--kinetic-toast-fg-muted`) so toasts inherit
+	 * the app theme.
 	 */
 	style?: CSSProperties;
 }
@@ -145,7 +161,17 @@ const buildKineticItem = (
 		position: merged.position ?? fallbackPosition ?? store.position,
 		autoExpandDelayMs: auto.expandDelayMs,
 		autoCollapseDelayMs: auto.collapseDelayMs,
+		createdAt: Date.now(),
 	};
+};
+
+const resolveMaxAge = (
+	item: KineticItem,
+	defaultMaxAge: number | null,
+): number | null => {
+	if (item.maxAge === null) return null;
+	if (typeof item.maxAge === "number") return item.maxAge;
+	return defaultMaxAge;
 };
 
 const createToast = (options: InternalKineticOptions) => {
@@ -198,6 +224,10 @@ export const kinetic = {
 			...opts.loading,
 			state: "loading",
 			duration: null,
+			// Long-running promises must not be killed by the navigation
+			// history cap. Callers can still opt back in by passing
+			// `maxAge: <ms>` in `opts.loading`.
+			maxAge: opts.loading.maxAge ?? null,
 			position: opts.position,
 		});
 
@@ -269,6 +299,7 @@ export function Toaster({
 	theme,
 	closeButton = false,
 	navigation = false,
+	maxAge = DEFAULT_MAX_AGE,
 	style,
 }: KineticToasterProps) {
 	const resolvedTheme = useResolvedTheme(theme);
@@ -281,6 +312,9 @@ export function Toaster({
 
 	const hoverRef = useRef(false);
 	const timersRef = useRef(new Map<string, number>());
+	// Wall-clock max-age timers. Separate from `timersRef` because they MUST
+	// NOT pause on hover — even sticky toasts should age out of the nav queue.
+	const maxAgeTimersRef = useRef(new Map<string, number>());
 	const listRef = useRef(toasts);
 	const latestRef = useRef<string | undefined>(undefined);
 	const prevLiveIdsRef = useRef(new Set<string>());
@@ -316,6 +350,11 @@ export function Toaster({
 		timersRef.current.clear();
 	}, []);
 
+	const clearAllMaxAgeTimers = useCallback(() => {
+		for (const t of maxAgeTimersRef.current.values()) clearTimeout(t);
+		maxAgeTimersRef.current.clear();
+	}, []);
+
 	const schedule = useCallback((items: KineticItem[]) => {
 		if (hoverRef.current) return;
 
@@ -335,14 +374,40 @@ export function Toaster({
 		}
 	}, []);
 
+	const scheduleMaxAge = useCallback(
+		(items: KineticItem[]) => {
+			for (const item of items) {
+				if (item.exiting) continue;
+				const key = timeoutKey(item);
+				if (maxAgeTimersRef.current.has(key)) continue;
+
+				const max = resolveMaxAge(item, maxAge);
+				if (max === null || max <= 0) continue;
+
+				const elapsed = Date.now() - item.createdAt;
+				const remaining = Math.max(0, max - elapsed);
+
+				maxAgeTimersRef.current.set(
+					key,
+					window.setTimeout(
+						() => dismissToast(item.id, item.instanceId),
+						remaining,
+					),
+				);
+			}
+		},
+		[maxAge],
+	);
+
 	useEffect(() => {
 		const listener: KineticListener = (next) => setToasts(next);
 		store.listeners.add(listener);
 		return () => {
 			store.listeners.delete(listener);
 			clearAllTimers();
+			clearAllMaxAgeTimers();
 		};
-	}, [clearAllTimers]);
+	}, [clearAllTimers, clearAllMaxAgeTimers]);
 
 	useEffect(() => {
 		listRef.current = toasts;
@@ -374,7 +439,13 @@ export function Toaster({
 		prevLiveIdsRef.current = new Set(currentLive.map((t) => t.id));
 
 		schedule(toasts);
-	}, [toasts, schedule, position]);
+		// Recompute every pass so `maxAge` prop changes take effect and so
+		// stale timers from removed/updated toast instances are dropped.
+		// Each delay is computed as `max - (now - createdAt)`, so rebuilding
+		// the timer for an existing toast preserves its absolute deadline.
+		clearAllMaxAgeTimers();
+		scheduleMaxAge(toasts);
+	}, [toasts, schedule, scheduleMaxAge, clearAllMaxAgeTimers, position]);
 
 	const handleMouseEnterRef =
 		useRef<MouseEventHandler<HTMLDivElement>>(null);

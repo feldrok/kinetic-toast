@@ -75,10 +75,12 @@ Common `Toaster` props:
 - `theme`: `light | dark | system`
 - `closeButton`: show dismiss controls
 - `navigation`: enable stack navigation
+- `maxAge`: wall-clock cap on how long toasts stay in the `<` `>` history (default 60000ms, `null` to disable)
 - `options`: default toast options
 
 Common toast options:
-- `title`, `description`, `type`, `duration`, `position`, `icon`, `fill`, `roundness`, `autopilot`, `button`, `styles`
+- `title`, `description`, `type`, `duration`, `maxAge`, `position`, `icon`, `fill`, `roundness`, `autopilot`, `button`, `styles`
+- `maxAge` is independent of `duration` and ignores hover-pause; pass `null` to keep an individual toast pinned indefinitely. `kinetic.promise` loading state passes `maxAge: null` automatically.
 
 ## Verification
 

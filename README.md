@@ -136,6 +136,7 @@ Render one `Toaster` near the root of your app.
 | `options` | `Partial<KineticOptions>` | — | Default options merged into every toast. |
 | `closeButton` | `boolean` | `false` | Shows an accessible close button on each toast. |
 | `navigation` | `boolean` | `false` | Shows previous/next controls when multiple live toasts share a position. |
+| `maxAge` | `number \| null` | `60000` | Hard wall-clock cap on how long any toast stays in the navigation history. Independent of `duration` and ignores hover-pause so old toasts age out even while you're navigating with `<` `>`. Pass `null` to disable. |
 
 ## Toast API
 
@@ -217,6 +218,7 @@ type KineticOptions = {
   type?: "success" | "loading" | "error" | "warning" | "info" | "action";
   position?: KineticPosition;
   duration?: number | null;
+  maxAge?: number | null;
   icon?: React.ReactNode | null;
   fill?: string;
   roundness?: number;
@@ -237,6 +239,17 @@ type KineticOptions = {
     button?: string;
   };
 };
+```
+
+### Navigation history cap
+
+Toasts age out of the `<` `>` queue after `maxAge` (default 60s, configurable per Toaster or per toast). This timer runs independently of `duration` and ignores hover-pause, so even sticky toasts (`duration: null`) eventually disappear. Pass `maxAge: null` to opt an individual toast out — the `kinetic.promise` loading state does this automatically so long-running promises aren't killed mid-flight.
+
+```tsx
+<Toaster maxAge={30000} />
+
+kinetic.info({ title: "Sticky", duration: null });            // gone after 60s anyway
+kinetic.info({ title: "Persistent", duration: null, maxAge: null }); // truly sticky
 ```
 
 ### Visual performance controls
