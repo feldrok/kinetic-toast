@@ -607,6 +607,59 @@ export function Toaster({
 	);
 
 	const viewports = viewportModels.map((model) => {
+		// In navigation mode, render ONE Kinetic per viewport with a stable
+		// React key so switching toasts via `<` `>` updates props on the same
+		// instance and triggers Kinetic's existing morph animation, rather
+		// than unmounting + remounting (which would re-render abruptly).
+		if (navigation && model.selectedId) {
+			const selected =
+				model.items.find((toast) => toast.id === model.selectedId) ??
+				model.items[model.items.length - 1];
+			if (!selected) return null;
+			const h = getHandlers(selected.id);
+			return (
+				<section
+					key={model.position}
+					data-kinetic-viewport
+					data-position={model.position}
+					data-theme={theme ? resolvedTheme : undefined}
+					aria-live="polite"
+					style={getViewportStyle(model.position)}
+				>
+					<Kinetic
+						key={`viewport-${model.position}`}
+						id={selected.id}
+						state={selected.state}
+						title={selected.title}
+						description={selected.description}
+						position={model.pill}
+						expand={model.expand}
+						icon={selected.icon}
+						fill={selected.fill}
+						styles={selected.styles}
+						button={selected.button}
+						roundness={selected.roundness}
+						performanceMode={selected.performanceMode}
+						effects={selected.effects}
+						exiting={selected.exiting}
+						autoExpandDelayMs={selected.autoExpandDelayMs}
+						autoCollapseDelayMs={selected.autoCollapseDelayMs}
+						refreshKey={selected.instanceId}
+						canExpand={
+							activeId === undefined || activeId === selected.id
+						}
+						closeButton={closeButton}
+						navIndex={model.showNav ? model.selectedIndex : undefined}
+						navTotal={model.showNav ? model.live.length : undefined}
+						onNavigate={(dir) => navigate(model.position, dir)}
+						onMouseEnter={h.enter}
+						onMouseLeave={h.leave}
+						onDismiss={h.dismiss}
+					/>
+				</section>
+			);
+		}
+
 		return (
 			<section
 				key={model.position}
@@ -617,8 +670,6 @@ export function Toaster({
 				style={getViewportStyle(model.position)}
 			>
 				{model.items.map((item) => {
-					const isSelected = item.id === model.selectedId;
-					if (navigation && !isSelected && !item.exiting) return null;
 					const h = getHandlers(item.id);
 					return (
 						<Kinetic
@@ -642,15 +693,6 @@ export function Toaster({
 							refreshKey={item.instanceId}
 							canExpand={activeId === undefined || activeId === item.id}
 							closeButton={closeButton}
-							navIndex={
-								model.showNav && isSelected
-									? model.selectedIndex
-									: undefined
-							}
-							navTotal={
-								model.showNav && isSelected ? model.live.length : undefined
-							}
-							onNavigate={(dir) => navigate(model.position, dir)}
 							onMouseEnter={h.enter}
 							onMouseLeave={h.leave}
 							onDismiss={h.dismiss}

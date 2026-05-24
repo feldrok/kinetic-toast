@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import {
 	type CSSProperties,
+	type FocusEventHandler,
 	type MouseEventHandler,
 	memo,
 	type ReactNode,
@@ -154,6 +155,7 @@ export const Kinetic = memo(function Kinetic({
 	const [view, setView] = useState<View>(next);
 	const [applied, setApplied] = useState(refreshKey);
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [isHovered, setIsHovered] = useState(false);
 	const [ready, setReady] = useState(false);
 	const [pillWidth, setPillWidth] = useState(0);
 	const [contentHeight, setContentHeight] = useState(0);
@@ -395,6 +397,18 @@ export const Kinetic = memo(function Kinetic({
 	/* ------------------------------ Derived values ---------------------------- */
 
 	const showNav = navTotal !== undefined && navTotal > 1;
+	const isLast =
+		navIndex !== undefined &&
+		navTotal !== undefined &&
+		navIndex >= navTotal - 1;
+	const canDismiss = Boolean(closeButton && onDismiss);
+	// The X replaces the disabled `>` chevron when navigating, or stands alone
+	// in the right cluster when there is no nav stack.
+	const showInlineClose = canDismiss && (!showNav || isLast);
+	const showRightCluster = showNav || canDismiss;
+	// Pill grows only while hovered/focused so default state stays compact.
+	// 50 fits the two-button nav cluster (or `<` + close); 28 fits a solo close.
+	const rightClusterWidth = showNav ? 50 : 28;
 	const minExpanded = HEIGHT * MIN_EXPAND_RATIO;
 	const rawExpanded = hasDesc
 		? Math.max(minExpanded, HEIGHT + contentHeight)
@@ -408,13 +422,8 @@ export const Kinetic = memo(function Kinetic({
 	const expanded = open ? rawExpanded : frozenExpandedRef.current;
 	const svgHeight = hasDesc ? Math.max(expanded, minExpanded) : HEIGHT;
 	const expandedContent = Math.max(0, expanded - HEIGHT);
-	// 50 reserves room for the two nav chevrons + gap. When the close
-	// button is also rendered, the nav cluster is shifted left via the CSS
-	// `:has([data-kinetic-close])` rule by `var(--kinetic-height) - 0.5rem`
-	// (32px when HEIGHT=40); add HEIGHT here so the pill grows enough that
-	// the auto-margin can still resolve to a non-zero value instead of
-	// overflowing into the close button.
-	const navExtra = showNav ? (closeButton ? 50 + HEIGHT : 50) : 0;
+	const navExtra =
+		isHovered && showRightCluster ? rightClusterWidth : 0;
 	const resolvedPillWidth = Math.max(pillWidth || HEIGHT, HEIGHT) + navExtra;
 	const pillHeight = HEIGHT + blur * 3;
 
@@ -483,6 +492,7 @@ export const Kinetic = memo(function Kinetic({
 
 	const handleEnter: MouseEventHandler<HTMLDivElement> = useCallback(
 		(e) => {
+			setIsHovered(true);
 			onMouseEnter?.(e);
 			if (hasDesc) setIsExpanded(true);
 		},
@@ -491,11 +501,27 @@ export const Kinetic = memo(function Kinetic({
 
 	const handleLeave: MouseEventHandler<HTMLDivElement> = useCallback(
 		(e) => {
+			setIsHovered(false);
 			onMouseLeave?.(e);
 			setIsExpanded(false);
 		},
 		[onMouseLeave],
 	);
+
+	const handleFocus: FocusEventHandler<HTMLDivElement> = useCallback(() => {
+		setIsHovered(true);
+	}, []);
+
+	const handleBlur: FocusEventHandler<HTMLDivElement> = useCallback((e) => {
+		if (
+			e.currentTarget instanceof Node &&
+			e.relatedTarget instanceof Node &&
+			e.currentTarget.contains(e.relatedTarget)
+		) {
+			return;
+		}
+		setIsHovered(false);
+	}, []);
 
 	const handleTransitionEnd: TransitionEventHandler<HTMLDivElement> =
 		useCallback(
@@ -606,6 +632,7 @@ export const Kinetic = memo(function Kinetic({
 			data-kinetic-toast
 			data-ready={ready}
 			data-expanded={open}
+			data-hovered={isHovered}
 			data-exiting={exiting}
 			data-edge={expand}
 			data-position={position}
@@ -614,6 +641,8 @@ export const Kinetic = memo(function Kinetic({
 			style={rootStyle}
 			onMouseEnter={handleEnter}
 			onMouseLeave={handleLeave}
+			onFocus={handleFocus}
+			onBlur={handleBlur}
 			onTransitionEnd={handleTransitionEnd}
 			onPointerDown={handlePointerDown}
 		>
@@ -693,61 +722,52 @@ export const Kinetic = memo(function Kinetic({
 						</div>
 					)}
 				</div>
-				{showNav && (
+				{showRightCluster && (
 					<div data-kinetic-nav>
-						<button
-							type="button"
-							disabled={navIndex === 0}
-							aria-label="Previous notification"
-							onClick={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								if (navIndex !== 0) onNavigate?.(-1);
-							}}
-						>
-							<ChevronLeft />
-						</button>
-						<button
-							type="button"
-							disabled={
-								navIndex !== undefined &&
-								navTotal !== undefined &&
-								navIndex >= navTotal - 1
-							}
-							aria-label="Next notification"
-							onClick={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								if (
-									navIndex !== undefined &&
-									navTotal !== undefined &&
-									navIndex >= navTotal - 1
-								) {
-									return;
-								}
-								onNavigate?.(1);
-							}}
-						>
-							<ChevronRight />
-						</button>
+						{showNav && (
+							<button
+								type="button"
+								disabled={navIndex === 0}
+								aria-label="Previous notification"
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									if (navIndex !== 0) onNavigate?.(-1);
+								}}
+							>
+								<ChevronLeft />
+							</button>
+						)}
+						{showInlineClose ? (
+							<button
+								type="button"
+								data-kinetic-close
+								aria-label="Close notification"
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									onDismiss?.();
+								}}
+							>
+								<X />
+							</button>
+						) : (
+							<button
+								type="button"
+								disabled={isLast}
+								aria-label="Next notification"
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									if (!isLast) onNavigate?.(1);
+								}}
+							>
+								<ChevronRight />
+							</button>
+						)}
 					</div>
 				)}
 			</div>
-
-			{closeButton && onDismiss && (
-				<button
-					type="button"
-					data-kinetic-close
-					aria-label="Close notification"
-					onClick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-						onDismiss();
-					}}
-				>
-					<X />
-				</button>
-			)}
 
 			{hasDesc && (
 				<div data-kinetic-content data-edge={expand} data-visible={open}>

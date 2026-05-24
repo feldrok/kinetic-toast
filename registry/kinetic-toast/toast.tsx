@@ -573,6 +573,53 @@ export function Toaster({
 		const showNav = navigation && live.length > 1 && !displayItem?.exiting;
 		const selIdx = live.findIndex((t) => t.id === selId);
 
+		// In navigation mode, render ONE Kinetic per viewport with a stable
+		// React key so switching toasts via `<` `>` updates props on the same
+		// instance and triggers Kinetic's existing morph animation, rather
+		// than unmounting + remounting (which would re-render abruptly).
+		if (navigation && selId) {
+			const selected = items.find((t) => t.id === selId) ?? items[items.length - 1];
+			if (!selected) return null;
+			const h = getHandlers(selected.id);
+			return (
+				<section
+					key={pos}
+					data-kinetic-viewport
+					data-position={pos}
+					data-theme={theme ? resolvedTheme : undefined}
+					aria-live="polite"
+					style={getViewportStyle(pos)}
+				>
+					<Kinetic
+						key={`viewport-${pos}`}
+						id={selected.id}
+						state={selected.state}
+						title={selected.title}
+						description={selected.description}
+						position={pill}
+						expand={expand}
+						icon={selected.icon}
+						fill={selected.fill}
+						styles={selected.styles}
+						button={selected.button}
+						roundness={selected.roundness}
+						exiting={selected.exiting}
+						autoExpandDelayMs={selected.autoExpandDelayMs}
+						autoCollapseDelayMs={selected.autoCollapseDelayMs}
+						refreshKey={selected.instanceId}
+						canExpand={activeId === undefined || activeId === selected.id}
+						closeButton={closeButton}
+						navIndex={showNav ? selIdx : undefined}
+						navTotal={showNav ? live.length : undefined}
+						onNavigate={(dir) => navigate(pos, dir)}
+						onMouseEnter={h.enter}
+						onMouseLeave={h.leave}
+						onDismiss={h.dismiss}
+					/>
+				</section>
+			);
+		}
+
 		return (
 			<section
 				key={pos}
@@ -583,8 +630,6 @@ export function Toaster({
 				style={getViewportStyle(pos)}
 			>
 				{items.map((item) => {
-					const isSelected = item.id === selId;
-					if (navigation && !isSelected && !item.exiting) return null;
 					const h = getHandlers(item.id);
 					return (
 						<Kinetic
@@ -606,9 +651,6 @@ export function Toaster({
 							refreshKey={item.instanceId}
 							canExpand={activeId === undefined || activeId === item.id}
 							closeButton={closeButton}
-							navIndex={showNav && isSelected ? selIdx : undefined}
-							navTotal={showNav && isSelected ? live.length : undefined}
-							onNavigate={(dir) => navigate(pos, dir)}
 							onMouseEnter={h.enter}
 							onMouseLeave={h.leave}
 							onDismiss={h.dismiss}
