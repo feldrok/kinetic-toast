@@ -143,6 +143,7 @@
 	position: absolute;
 	z-index: 20;
 	display: flex;
+	box-sizing: border-box;
 	align-items: center;
 	padding: 0.5rem;
 	height: var(--kinetic-height);
@@ -228,6 +229,8 @@
 /* ---------------------------------- Title --------------------------------- */
 
 [data-kinetic-title] {
+	display: inline-flex;
+	align-items: center;
 	font-size: 0.825rem;
 	line-height: 1rem;
 	font-weight: 500;
@@ -292,13 +295,15 @@
 	position: absolute;
 	left: 0;
 	z-index: 10;
+	box-sizing: border-box;
 	width: 100%;
+	min-width: 0;
 	pointer-events: none;
 	opacity: var(--_co, 0);
 }
 
 [data-kinetic-content]:not([data-visible="true"]) {
-	content-visibility: hidden;
+	visibility: hidden;
 }
 
 [data-kinetic-toast][data-ready="true"] [data-kinetic-content] {
@@ -311,7 +316,7 @@
 }
 
 [data-kinetic-content][data-edge="bottom"] {
-	top: var(--kinetic-height);
+	top: calc(var(--kinetic-height) + var(--_cg, 0px));
 }
 
 [data-kinetic-content][data-visible="true"] {
@@ -325,7 +330,13 @@
 }
 
 [data-kinetic-description] {
+	box-sizing: border-box;
 	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 	text-align: left;
 	padding: 1rem;
 	font-size: 0.875rem;
@@ -338,6 +349,9 @@
 
 [data-kinetic-button] {
 	display: flex;
+	box-sizing: border-box;
+	width: 100%;
+	min-width: 0;
 	align-items: center;
 	justify-content: center;
 	height: 1.75rem;

@@ -4,7 +4,6 @@ import {
 	type MouseEventHandler,
 	memo,
 	type ReactNode,
-	type TransitionEventHandler,
 	useCallback,
 	useEffect,
 	useLayoutEffect,
@@ -20,7 +19,6 @@ import {
 	MIN_EXPAND_RATIO,
 	PILL_PADDING,
 	SPRING,
-	SWAP_COLLAPSE_MS,
 	WIDTH,
 } from "./constants";
 import {
@@ -206,9 +204,7 @@ export const Kinetic = memo(function Kinetic({
 	const headerExitRef = useRef<number | null>(null);
 	const autoExpandRef = useRef<number | null>(null);
 	const autoCollapseRef = useRef<number | null>(null);
-	const swapTimerRef = useRef<number | null>(null);
 	const lastRefreshKeyRef = useRef(refreshKey);
-	const pendingRef = useRef<{ key?: string; payload: View } | null>(null);
 	const [headerLayer, setHeaderLayer] = useState<{
 		current: { key: string; view: View };
 		prev: { key: string; view: View } | null;
@@ -345,7 +341,6 @@ export const Kinetic = memo(function Kinetic({
 		if (refreshKey === undefined) {
 			setView(next);
 			setApplied(undefined);
-			pendingRef.current = null;
 			lastRefreshKeyRef.current = refreshKey;
 			return;
 		}
@@ -353,28 +348,9 @@ export const Kinetic = memo(function Kinetic({
 		if (lastRefreshKeyRef.current === refreshKey) return;
 		lastRefreshKeyRef.current = refreshKey;
 
-		if (swapTimerRef.current) {
-			clearTimeout(swapTimerRef.current);
-			swapTimerRef.current = null;
-		}
-
-		if (open) {
-			pendingRef.current = { key: refreshKey, payload: next };
-			setIsExpanded(false);
-			swapTimerRef.current = window.setTimeout(() => {
-				swapTimerRef.current = null;
-				const pending = pendingRef.current;
-				if (!pending) return;
-				setView(pending.payload);
-				setApplied(pending.key);
-				pendingRef.current = null;
-			}, SWAP_COLLAPSE_MS);
-		} else {
-			pendingRef.current = null;
-			setView(next);
-			setApplied(refreshKey);
-		}
-	}, [open, refreshKey, next]);
+		setView(next);
+		setApplied(refreshKey);
+	}, [refreshKey, next]);
 
 	/* ----------------------------- Auto expand/collapse ----------------------- */
 
@@ -437,9 +413,10 @@ export const Kinetic = memo(function Kinetic({
 		frozenExpandedRef.current = rawExpanded;
 	}
 
-	const expanded = open ? rawExpanded : frozenExpandedRef.current;
+	const contentGap = open && !visualEffects.gooey ? 6 : 0;
+	const expanded = (open ? rawExpanded : frozenExpandedRef.current) + contentGap;
 	const svgHeight = hasDesc ? Math.max(expanded, minExpanded) : HEIGHT;
-	const expandedContent = Math.max(0, expanded - HEIGHT);
+	const expandedContent = Math.max(0, expanded - HEIGHT - contentGap);
 	const navExtra = showNav ? 50 : 0;
 	const resolvedPillWidth = Math.max(pillWidth || HEIGHT, HEIGHT) + navExtra;
 	const pillHeight = HEIGHT + gooeyBlur * 3;
@@ -464,10 +441,11 @@ export const Kinetic = memo(function Kinetic({
 
 	const bodyAnimate = useMemo(
 		() => ({
+			y: HEIGHT + contentGap,
 			height: open ? expandedContent : 0,
 			opacity: open ? 1 : 0,
 		}),
-		[open, expandedContent],
+		[open, expandedContent, contentGap],
 	);
 
 	const bodyTransition = useMemo(
@@ -495,11 +473,12 @@ export const Kinetic = memo(function Kinetic({
 			"--_h": `${open ? expanded : HEIGHT}px`,
 			"--_pw": `${resolvedPillWidth}px`,
 			"--_px": `${pillX}px`,
-			"--_ht": `translateY(${open ? (expand === "bottom" ? 3 : -3) : 0}px) scale(${open ? 0.9 : 1})`,
+			"--_ht": "translateY(0px) scale(1)",
 			"--_co": `${open ? 1 : 0}`,
+			"--_cg": `${contentGap}px`,
 			"--_hb": headerBlur,
 		}),
-		[open, expanded, resolvedPillWidth, pillX, expand, headerBlur],
+		[open, expanded, resolvedPillWidth, pillX, contentGap, headerBlur],
 	);
 
 	/* -------------------------------- Handlers -------------------------------- */
@@ -519,25 +498,6 @@ export const Kinetic = memo(function Kinetic({
 		},
 		[onMouseLeave],
 	);
-
-	const handleTransitionEnd: TransitionEventHandler<HTMLDivElement> =
-		useCallback(
-			(e) => {
-				if (e.propertyName !== "height" && e.propertyName !== "transform")
-					return;
-				if (open) return;
-				const pending = pendingRef.current;
-				if (!pending) return;
-				if (swapTimerRef.current) {
-					clearTimeout(swapTimerRef.current);
-					swapTimerRef.current = null;
-				}
-				setView(pending.payload);
-				setApplied(pending.key);
-				pendingRef.current = null;
-			},
-			[open],
-		);
 
 	/* -------------------------------- Swipe ----------------------------------- */
 
@@ -639,7 +599,6 @@ export const Kinetic = memo(function Kinetic({
 			style={rootStyle}
 			onMouseEnter={handleEnter}
 			onMouseLeave={handleLeave}
-			onTransitionEnd={handleTransitionEnd}
 			onPointerDown={handlePointerDown}
 		>
 			<div data-kinetic-canvas data-edge={expand} style={canvasStyle}>
@@ -659,7 +618,6 @@ export const Kinetic = memo(function Kinetic({
 					/>
 					<motion.rect
 						data-kinetic-body
-						y={HEIGHT}
 						width={WIDTH}
 						rx={resolvedRoundness}
 						ry={resolvedRoundness}
