@@ -53,7 +53,9 @@
 		"prepack": "bun run build",
 		"registry:validate": "bunx --bun shadcn@latest registry validate",
 		"registry:build": "bunx --bun shadcn@latest build --output public/r",
-		"registry:check": "bun run registry:validate && bun run registry:build && bunx --bun shadcn@latest view ./public/r/kinetic-toast.json"
+		"registry:check": "bun run registry:validate && bun run registry:build && bunx --bun shadcn@latest view ./public/r/kinetic-toast.json",
+		"benchmark": "bun run build && node scripts/serve-benchmark.mjs",
+		"benchmark:serve": "node scripts/serve-benchmark.mjs"
 	},
 	"peerDependencies": {
 		"react": ">=18",
