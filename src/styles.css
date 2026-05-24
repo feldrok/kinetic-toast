@@ -47,6 +47,31 @@
 	--kinetic-state-warning: oklch(0.795 0.184 86.047);
 	--kinetic-state-info: oklch(0.685 0.169 237.323);
 	--kinetic-state-action: oklch(0.623 0.214 259.815);
+
+	/*
+	 * Theming surface.
+	 * Overridden by:
+	 *   1. .dark class on an ancestor (built-in light/dark inversion)
+	 *   2. [data-kinetic-viewport][data-theme="..."] when the Toaster `theme` prop is set
+	 *   3. Inline style on the viewport (shadcn wrapper maps these to popover tokens)
+	 */
+	--kinetic-fill: #1a1a1a;
+	--kinetic-fg-muted: rgba(255, 255, 255, 0.5);
+}
+
+.dark {
+	--kinetic-fill: #f2f2f2;
+	--kinetic-fg-muted: rgba(0, 0, 0, 0.5);
+}
+
+[data-kinetic-viewport][data-theme="light"] {
+	--kinetic-fill: #1a1a1a;
+	--kinetic-fg-muted: rgba(255, 255, 255, 0.5);
+}
+
+[data-kinetic-viewport][data-theme="dark"] {
+	--kinetic-fill: #f2f2f2;
+	--kinetic-fg-muted: rgba(0, 0, 0, 0.5);
 }
 
 /* ---------------------------------- Toast --------------------------------- */
@@ -133,6 +158,11 @@
 
 [data-kinetic-svg] {
 	overflow: visible;
+}
+
+[data-kinetic-pill],
+[data-kinetic-body] {
+	fill: var(--kinetic-fill);
 }
 
 /* --------------------------------- Shapes --------------------------------- */
@@ -341,6 +371,7 @@
 	padding: 1rem;
 	font-size: 0.875rem;
 	line-height: 1.25rem;
+	color: var(--kinetic-fg-muted);
 	contain: layout style paint;
 	content-visibility: auto;
 }
@@ -547,12 +578,3 @@
 	}
 }
 
-/* --------------------------------- Themes -------------------------------- */
-
-[data-kinetic-viewport][data-theme="dark"] [data-kinetic-description] {
-	color: rgba(0, 0, 0, 0.5);
-}
-
-[data-kinetic-viewport][data-theme="light"] [data-kinetic-description] {
-	color: rgba(255, 255, 255, 0.5);
-}

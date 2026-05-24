@@ -63,6 +63,7 @@ await kinetic.promise(save(), {
 
 - Components that call `kinetic.*` must be client components in React Server Component frameworks.
 - For the registry item, the generated `@ui/kinetic-toast.tsx` wrapper imports colocated CSS from `@ui/kinetic-toast/styles.css`.
+- The wrapper maps shadcn tokens (`--popover`, `--popover-foreground`) onto `--kinetic-fill` / `--kinetic-fg-muted`. Whatever toggles `.dark` in the host app (next-themes, Tailwind class mode, vanilla state) flips the toast surface — no JS theme dep required. If the host has no `--popover` token, kinetic's own `:root` / `.dark` defaults take over.
 - If a Next.js Pages Router app rejects first-party global CSS outside `_app`, move the wrapper CSS import to `pages/_app.tsx`.
 - Keep `<Toaster />` mounted once; duplicate toasters can duplicate timers/state.
 - If TypeScript aliases differ, never hardcode paths. Read `components.json` or run `shadcn info --json` and use the configured UI alias.

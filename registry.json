@@ -55,7 +55,7 @@
 					"target": "@ui/kinetic-toast/styles.css"
 				}
 			],
-			"docs": "Add the component, then import `Toaster` from your shadcn UI path (for example `@/components/ui/kinetic-toast`) and render it once in your app layout. Trigger notifications from client components with `kinetic.success({ title: \"Saved\" })`. The wrapper imports colocated CSS for Sonner-like one-step setup. If a legacy Next.js Pages Router app rejects this CSS import, move it to `pages/_app.tsx`."
+			"docs": "Add the component, then import `Toaster` from your shadcn UI path (for example `@/components/ui/kinetic-toast`) and render it once in your app layout. Trigger notifications from client components with `kinetic.success({ title: \"Saved\" })`. The wrapper maps `--popover` / `--popover-foreground` onto kinetic's surface variables, so toasts inherit your app theme automatically — toggling `.dark` on `html` (next-themes, Tailwind class mode, your own state) flips the toast surface with no JS dependency. The wrapper imports colocated CSS for Sonner-like one-step setup. If a legacy Next.js Pages Router app rejects this CSS import, move it to `pages/_app.tsx`."
 		}
 	]
 }

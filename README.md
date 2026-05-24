@@ -61,6 +61,8 @@ kinetic.success({ title: "Saved" });
 
 The registry installs a Sonner-style `components/ui/kinetic-toast.tsx` wrapper plus editable source under `components/ui/kinetic-toast/`. The wrapper imports colocated CSS, so the common setup is one `shadcn add` command plus one `<Toaster />`.
 
+The wrapper also maps your shadcn theme tokens (`--popover`, `--popover-foreground`) onto kinetic's surface variables, so toasts inherit the host app theme automatically. Whatever toggles dark mode in your app — `next-themes`, Tailwind's class mode, your own state — also flips the toast surface. No JS theme dependency.
+
 ### npm
 
 Once the package is published, install it from npm:
@@ -266,6 +268,19 @@ You can customize defaults globally:
   --kinetic-duration: 600ms;
 }
 ```
+
+### Theming
+
+Kinetic Toast follows the host app theme via two CSS variables: `--kinetic-fill` (the SVG surface color) and `--kinetic-fg-muted` (description text). Defaults invert when a `.dark` ancestor is present, so any theme manager that toggles `.dark` on `<html>` (next-themes, Tailwind's class mode, your own state) will flip the toast surface automatically. Override at any level:
+
+```css
+:root {
+  --kinetic-fill: hsl(var(--popover));
+  --kinetic-fg-muted: color-mix(in oklab, hsl(var(--popover-foreground)) 60%, transparent);
+}
+```
+
+The shadcn registry wrapper already does this mapping for you. If you want to force a single theme regardless of the host, pass `theme="light" | "dark" | "system"` to `<Toaster />`.
 
 You can also pass class names per toast:
 
