@@ -280,6 +280,10 @@ bun run registry:check
 
 This repo includes `skills/kinetic-toast/SKILL.md`, a concise setup guide an agent can use so requests like “set up Kinetic Toast in this app” follow the preferred shadcn registry flow, client-boundary requirements, and framework-specific CSS notes.
 
+### Architecture notes
+
+See [`docs/framework-agnostic-core.md`](docs/framework-agnostic-core.md) for the proposed long-term split between a framework-neutral toast runtime and React, Vue, vanilla, or other framework adapters.
+
 ## License
 
 MIT
