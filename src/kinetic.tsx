@@ -70,8 +70,8 @@ interface KineticProps {
 	navIndex?: number;
 	navTotal?: number;
 	onNavigate?: (dir: -1 | 1) => void;
-	onMouseEnter?: MouseEventHandler<HTMLButtonElement>;
-	onMouseLeave?: MouseEventHandler<HTMLButtonElement>;
+	onMouseEnter?: MouseEventHandler<HTMLDivElement>;
+	onMouseLeave?: MouseEventHandler<HTMLDivElement>;
 	onDismiss?: () => void;
 }
 
@@ -470,7 +470,7 @@ export const Kinetic = memo(function Kinetic({
 
 	/* -------------------------------- Handlers -------------------------------- */
 
-	const handleEnter: MouseEventHandler<HTMLButtonElement> = useCallback(
+	const handleEnter: MouseEventHandler<HTMLDivElement> = useCallback(
 		(e) => {
 			onMouseEnter?.(e);
 			if (hasDesc) setIsExpanded(true);
@@ -478,7 +478,7 @@ export const Kinetic = memo(function Kinetic({
 		[hasDesc, onMouseEnter],
 	);
 
-	const handleLeave: MouseEventHandler<HTMLButtonElement> = useCallback(
+	const handleLeave: MouseEventHandler<HTMLDivElement> = useCallback(
 		(e) => {
 			onMouseLeave?.(e);
 			setIsExpanded(false);
@@ -486,7 +486,7 @@ export const Kinetic = memo(function Kinetic({
 		[onMouseLeave],
 	);
 
-	const handleTransitionEnd: TransitionEventHandler<HTMLButtonElement> =
+	const handleTransitionEnd: TransitionEventHandler<HTMLDivElement> =
 		useCallback(
 			(e) => {
 				if (e.propertyName !== "height" && e.propertyName !== "transform")
@@ -509,7 +509,7 @@ export const Kinetic = memo(function Kinetic({
 
 	const SWIPE_DISMISS = 30;
 	const SWIPE_MAX = 20;
-	const buttonRef = useRef<HTMLButtonElement>(null);
+	const rootRef = useRef<HTMLDivElement>(null);
 	const pointerStartRef = useRef<number | null>(null);
 	const onDismissRef = useRef(onDismiss);
 	onDismissRef.current = onDismiss;
@@ -517,12 +517,25 @@ export const Kinetic = memo(function Kinetic({
 	const swipeHandlersRef = useRef<{
 		onMove: (e: PointerEvent) => void;
 		onUp: (e: PointerEvent) => void;
+		onCancel: () => void;
 	} | null>(null);
+
+	const cleanupSwipe = useCallback(() => {
+		const el = rootRef.current;
+		const h = swipeHandlersRef.current;
+		pointerStartRef.current = null;
+		if (!el || !h) return;
+		el.style.transform = "";
+		el.removeEventListener("pointermove", h.onMove);
+		el.removeEventListener("pointerup", h.onUp);
+		el.removeEventListener("pointercancel", h.onCancel);
+		el.removeEventListener("lostpointercapture", h.onCancel);
+	}, []);
 
 	if (!swipeHandlersRef.current) {
 		const handlers = {
 			onMove: (e: PointerEvent) => {
-				const el = buttonRef.current;
+				const el = rootRef.current;
 				if (pointerStartRef.current === null || !el) return;
 				const dy = e.clientY - pointerStartRef.current;
 				const sign = dy > 0 ? 1 : -1;
@@ -530,23 +543,22 @@ export const Kinetic = memo(function Kinetic({
 				el.style.transform = `translateY(${clamped}px)`;
 			},
 			onUp: (e: PointerEvent) => {
-				const el = buttonRef.current;
-				if (pointerStartRef.current === null || !el) return;
+				if (pointerStartRef.current === null) return;
 				const dy = e.clientY - pointerStartRef.current;
-				pointerStartRef.current = null;
-				el.style.transform = "";
-				el.removeEventListener("pointermove", handlers.onMove);
-				el.removeEventListener("pointerup", handlers.onUp);
+				cleanupSwipe();
 				if (Math.abs(dy) > SWIPE_DISMISS) {
 					onDismissRef.current?.();
 				}
 			},
+			onCancel: () => cleanupSwipe(),
 		};
 		swipeHandlersRef.current = handlers;
 	}
 
+	useEffect(() => cleanupSwipe, [cleanupSwipe]);
+
 	const handleButtonClick = useCallback(
-		(e: React.MouseEvent) => {
+		(e: React.MouseEvent<HTMLButtonElement>) => {
 			e.preventDefault();
 			e.stopPropagation();
 			view.button?.onClick();
@@ -555,7 +567,7 @@ export const Kinetic = memo(function Kinetic({
 	);
 
 	const handlePointerDown = useCallback(
-		(e: React.PointerEvent<HTMLButtonElement>) => {
+		(e: React.PointerEvent<HTMLDivElement>) => {
 			if (exiting || !onDismiss) return;
 			const target = e.target as HTMLElement;
 			if (target.closest("[data-kinetic-button]")) return;
@@ -563,11 +575,13 @@ export const Kinetic = memo(function Kinetic({
 			if (target.closest("[data-kinetic-nav]")) return;
 			pointerStartRef.current = e.clientY;
 			e.currentTarget.setPointerCapture(e.pointerId);
-			const el = buttonRef.current;
+			const el = rootRef.current;
 			const h = swipeHandlersRef.current;
 			if (el && h) {
 				el.addEventListener("pointermove", h.onMove, { passive: true });
 				el.addEventListener("pointerup", h.onUp, { passive: true });
+				el.addEventListener("pointercancel", h.onCancel, { passive: true });
+				el.addEventListener("lostpointercapture", h.onCancel, { passive: true });
 			}
 		},
 		[exiting, onDismiss],
@@ -576,9 +590,8 @@ export const Kinetic = memo(function Kinetic({
 	/* --------------------------------- Render --------------------------------- */
 
 	return (
-		<button
-			ref={buttonRef}
-			type="button"
+		<div
+			ref={rootRef}
 			data-kinetic-toast
 			data-ready={ready}
 			data-expanded={open}
@@ -671,35 +684,21 @@ export const Kinetic = memo(function Kinetic({
 				</div>
 				{showNav && (
 					<div data-kinetic-nav>
-						<div
-							role="button"
-							tabIndex={navIndex === 0 ? -1 : 0}
-							aria-disabled={navIndex === 0}
+						<button
+							type="button"
+							disabled={navIndex === 0}
 							aria-label="Previous notification"
 							onClick={(e) => {
 								e.preventDefault();
 								e.stopPropagation();
 								if (navIndex !== 0) onNavigate?.(-1);
 							}}
-							onKeyDown={(e) => {
-								if (e.key !== "Enter" && e.key !== " ") return;
-								e.preventDefault();
-								e.stopPropagation();
-								if (navIndex !== 0) onNavigate?.(-1);
-							}}
 						>
 							<ChevronLeft />
-						</div>
-						<div
-							role="button"
-							tabIndex={
-								navIndex !== undefined &&
-								navTotal !== undefined &&
-								navIndex >= navTotal - 1
-									? -1
-									: 0
-							}
-							aria-disabled={
+						</button>
+						<button
+							type="button"
+							disabled={
 								navIndex !== undefined &&
 								navTotal !== undefined &&
 								navIndex >= navTotal - 1
@@ -717,47 +716,26 @@ export const Kinetic = memo(function Kinetic({
 								}
 								onNavigate?.(1);
 							}}
-							onKeyDown={(e) => {
-								if (e.key !== "Enter" && e.key !== " ") return;
-								e.preventDefault();
-								e.stopPropagation();
-								if (
-									navIndex !== undefined &&
-									navTotal !== undefined &&
-									navIndex >= navTotal - 1
-								) {
-									return;
-								}
-								onNavigate?.(1);
-							}}
 						>
 							<ChevronRight />
-						</div>
+						</button>
 					</div>
 				)}
 			</div>
 
 			{closeButton && onDismiss && (
-				<div
+				<button
+					type="button"
 					data-kinetic-close
-					role="button"
-					tabIndex={0}
 					aria-label="Close notification"
 					onClick={(e) => {
 						e.preventDefault();
 						e.stopPropagation();
 						onDismiss();
 					}}
-					onKeyDown={(e) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.preventDefault();
-							e.stopPropagation();
-							onDismiss();
-						}
-					}}
 				>
 					<X />
-				</div>
+				</button>
 			)}
 
 			{hasDesc && (
@@ -769,9 +747,7 @@ export const Kinetic = memo(function Kinetic({
 					>
 						{view.description}
 						{view.button && (
-							// biome-ignore lint/a11y/useValidAnchor: cannot use button inside a button
-							<a
-								href="#"
+							<button
 								type="button"
 								data-kinetic-button
 								data-state={view.state}
@@ -779,11 +755,11 @@ export const Kinetic = memo(function Kinetic({
 								onClick={handleButtonClick}
 							>
 								{view.button.title}
-							</a>
+							</button>
 						)}
 					</div>
 				</div>
 			)}
-		</button>
+		</div>
 	);
 });

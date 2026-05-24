@@ -57,6 +57,8 @@
 		"react-dom": ">=18"
 	},
 	"devDependencies": {
+		"@types/react": "^19.2.15",
+		"@types/react-dom": "^19.2.3",
 		"bunchee": "^6.9.4"
 	},
 	"dependencies": {

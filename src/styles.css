@@ -461,22 +461,25 @@
 	user-select: none;
 }
 
-[data-kinetic-nav] [role="button"] {
+[data-kinetic-nav] button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	width: 1.5rem;
 	height: 1.5rem;
+	padding: 0;
+	border: 0;
 	border-radius: 9999px;
+	background: transparent;
 	cursor: pointer;
 	color: inherit;
 }
 
-[data-kinetic-nav] [role="button"]:not([aria-disabled="true"]):hover {
+[data-kinetic-nav] button:not(:disabled):hover {
 	background-color: rgba(255, 255, 255, 0.12);
 }
 
-[data-kinetic-nav] [aria-disabled="true"] {
+[data-kinetic-nav] button:disabled {
 	opacity: 0.3;
 	cursor: default;
 }

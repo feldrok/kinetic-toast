@@ -286,16 +286,23 @@ export function Toaster({
 		new Map<
 			string,
 			{
-				enter: MouseEventHandler<HTMLButtonElement>;
-				leave: MouseEventHandler<HTMLButtonElement>;
+				enter: MouseEventHandler<HTMLDivElement>;
+				leave: MouseEventHandler<HTMLDivElement>;
 				dismiss: () => void;
 			}
 		>(),
 	);
 
 	useEffect(() => {
+		const previousPosition = store.position;
+		const previousOptions = store.options;
 		store.position = position;
 		store.options = options;
+
+		return () => {
+			if (store.position === position) store.position = previousPosition;
+			if (store.options === options) store.options = previousOptions;
+		};
 	}, [position, options]);
 
 	useEffect(() => {
@@ -368,12 +375,12 @@ export function Toaster({
 	}, [toasts, schedule, position]);
 
 	const handleMouseEnterRef =
-		useRef<MouseEventHandler<HTMLButtonElement>>(null);
+		useRef<MouseEventHandler<HTMLDivElement>>(null);
 	const handleMouseLeaveRef =
-		useRef<MouseEventHandler<HTMLButtonElement>>(null);
+		useRef<MouseEventHandler<HTMLDivElement>>(null);
 
 	handleMouseEnterRef.current = useCallback<
-		MouseEventHandler<HTMLButtonElement>
+		MouseEventHandler<HTMLDivElement>
 	>(() => {
 		if (hoverRef.current) return;
 		hoverRef.current = true;
@@ -381,7 +388,7 @@ export function Toaster({
 	}, [clearAllTimers]);
 
 	handleMouseLeaveRef.current = useCallback<
-		MouseEventHandler<HTMLButtonElement>
+		MouseEventHandler<HTMLDivElement>
 	>(() => {
 		if (!hoverRef.current) return;
 		hoverRef.current = false;
@@ -408,13 +415,13 @@ export function Toaster({
 			enter: ((e) => {
 				setActiveId((prev) => (prev === toastId ? prev : toastId));
 				handleMouseEnterRef.current?.(e);
-			}) as MouseEventHandler<HTMLButtonElement>,
+			}) as MouseEventHandler<HTMLDivElement>,
 			leave: ((e) => {
 				setActiveId((prev) =>
 					prev === latestRef.current ? prev : latestRef.current,
 				);
 				handleMouseLeaveRef.current?.(e);
-			}) as MouseEventHandler<HTMLButtonElement>,
+			}) as MouseEventHandler<HTMLDivElement>,
 			dismiss: () => dismissToast(toastId),
 		};
 
