@@ -16,6 +16,22 @@ Kinetic Toast gives you morphing, physics-driven notifications with a small impe
 - Optional navigation controls for multiple active toasts
 - TypeScript types included
 
+## Bun setup
+
+This project uses the Bun canary channel in `.bun-version` to make `bun check` available.
+Install [Bun](https://bun.com/docs/installation), then run this before installing project dependencies:
+
+```sh
+bun upgrade --canary
+bun --revision
+bun check --help
+```
+
+The tested baseline is `bun@1.4.3-canary.1`. The `packageManager` field declares
+the baseline; it does not upgrade an existing Bun installation. Canary builds
+change over time. Existing typecheck scripts remain the supported checks;
+`bun check` is available for optional TypeScript 7 compatibility checks.
+
 ## Installation
 
 Choose the setup that matches your project.
