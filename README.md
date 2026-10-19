@@ -18,18 +18,17 @@ Kinetic Toast gives you morphing, physics-driven notifications with a small impe
 
 ## Bun setup
 
-This project uses the Bun canary channel in `.bun-version` to make `bun check` available.
-Install [Bun](https://bun.com/docs/installation), then run this before installing project dependencies:
+This project pins stable Bun 1.4.3 in `.bun-version` and `packageManager`.
+Install it before installing project dependencies:
 
 ```sh
-bun upgrade --canary
+curl -fsSL https://bun.com/install | bash -s bun-v1.4.3
 bun --revision
 bun check --help
 ```
 
-The tested baseline is `bun@1.4.3-canary.1`. The `packageManager` field declares
-the baseline; it does not upgrade an existing Bun installation. Canary builds
-change over time. Existing typecheck scripts remain the supported checks;
+Confirm `bun --revision` prints `1.4.3+c6da4a4d3`. Builds and CI use this stable
+version. Existing typecheck scripts remain the supported checks;
 `bun check` is available for optional TypeScript 7 compatibility checks.
 
 ## Installation
